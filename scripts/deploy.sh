@@ -15,15 +15,32 @@ cd "$(dirname "$0")/.."
 fail() { echo "error: $*" >&2; exit 1; }
 
 # A host already running Traefik owns 80/443, so bringing up our own Caddy
-# would collide with it and take the existing sites down. Detect that case and
-# route through Traefik instead.
-if docker ps --format '{{.Names}}' 2>/dev/null | grep -qi '^traefik$'; then
+# would collide with it and take the existing sites down. Match on the image
+# as well as the name: Compose names containers after the project, so a
+# perfectly ordinary Traefik is called traefik-traefik-1 and an exact-name
+# check silently misses it — and the cost of missing it is production down.
+if docker ps --format '{{.Names}} {{.Image}}' 2>/dev/null | grep -qi 'traefik'; then
   COMPOSE_FILE=docker-compose.traefik.yml
   echo "detected a running Traefik — deploying behind it, no Caddy"
 else
   COMPOSE_FILE=docker-compose.prod.yml
 fi
 COMPOSE="docker compose -f $COMPOSE_FILE"
+
+# Belt and braces: whatever the detection concluded, never start our own proxy
+# on ports another container already holds. Name-based detection can always be
+# defeated by an unusual image or a renamed container; a bound port cannot.
+if [ "$COMPOSE_FILE" = "docker-compose.prod.yml" ]; then
+  holder=$(docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null \
+    | grep -E ':(80|443)->' | awk '{print $1}' | paste -sd, - || true)
+  if [ -n "$holder" ]; then
+    fail "refusing to start Caddy: ports 80/443 are already held by [$holder].
+       Something else is already fronting this host. Deploy behind it with:
+         docker compose -f docker-compose.traefik.yml up -d
+       after setting TRAEFIK_NETWORK / TRAEFIK_ENTRYPOINT / TRAEFIK_CERTRESOLVER
+       in .env — see SETUP.md."
+  fi
+fi
 
 # ---------------------------------------------------------------------------
 # Domain
