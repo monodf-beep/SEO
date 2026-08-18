@@ -75,7 +75,10 @@ if [ -n "$DOMAIN" ]; then
   echo "OAuth redirect: ${BASE_URL}/api/auth/callback/google"
   echo
   echo "next: add GOOGLE_CLIENT_ID / GOOGLE_CLIENT_SECRET to .env (see SETUP.md),"
-  echo "      then: docker compose -f docker-compose.prod.yml up -d"
+  # Deliberately not naming a compose file here: only deploy.sh knows whether
+  # this host already runs a reverse proxy, and naming the Caddy stack would
+  # invite the one command that takes 80/443 from an existing Traefik.
+  echo "      then: DOMAIN=${DOMAIN} ./scripts/deploy.sh"
 else
   echo "local URL:      ${BASE_URL}"
   echo "OAuth redirect: ${BASE_URL}/api/auth/callback/google"
