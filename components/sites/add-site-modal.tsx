@@ -87,17 +87,21 @@ export function AddSiteModal({
     setError("");
 
     try {
+      // Two GSC property shapes, and they must be told apart by prefix rather
+      // than by "contains a colon": splitting a URL-prefix property on ":"
+      // leaves "//example.com/", which no longer starts with "http", so the
+      // branch below never runs and the malformed value reaches the database.
       let domain = selectedProperty;
-      if (domain.includes(":")) {
-        domain = domain.split(":")[1];
-      }
-      // URL-prefix properties: https://example.com/
-      try {
-        if (domain.startsWith("http")) {
+      if (domain.startsWith("sc-domain:")) {
+        // Domain property: sc-domain:example.com
+        domain = domain.slice("sc-domain:".length);
+      } else {
+        // URL-prefix property: https://example.com/
+        try {
           domain = new URL(domain).hostname;
+        } catch {
+          // keep as-is
         }
-      } catch {
-        // keep as-is
       }
 
       const response = await fetch("/api/sites", {
