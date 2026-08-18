@@ -1,15 +1,20 @@
 # Deployment for a host that already runs Traefik (the case on
-# srv1697018.hstgr.cloud, alongside hermes and hindsight-mcp).
+# srv1697018.hstgr.cloud, alongside hermes, hindsight and supabase).
 #
 # Traefik owns 80/443 and issues the certificate, so nothing here publishes a
-# public port — use this file instead of docker-compose.prod.yml, never both,
-# or Caddy and Traefik will fight over the same ports.
+# public port — use this file instead of docker-compose.prod.yml, never both.
 #
 #   docker compose -f docker-compose.traefik.yml up -d
 #
-# Entrypoint and certresolver names are per-installation. Check yours with:
-#   docker inspect traefik --format '{{json .Config.Cmd}}' | tr ',' '\n'
-# then set TRAEFIK_ENTRYPOINT / TRAEFIK_CERTRESOLVER / TRAEFIK_NETWORK in .env.
+# No shared network is declared. That host runs Traefik in network_mode: host,
+# where it reaches containers directly on their bridge IP — which is how the
+# existing hermes-workspace router works, with no traefik.docker.network label
+# either. If your Traefik instead runs on a bridge network, the app has to join
+# it; see the snippet in SETUP.md.
+#
+# Memory limits are deliberate rather than cautious: that host was at 92% swap
+# with the full supabase stack running, and an unbounded newcomer would push the
+# OOM killer into picking a victim among the services already in production.
 
 services:
   app:
@@ -23,9 +28,6 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    networks:
-      - default
-      - traefik
     healthcheck:
       test:
         [
@@ -39,42 +41,50 @@ services:
       retries: 3
     environment:
       NODE_ENV: production
+      NODE_OPTIONS: --max-old-space-size=384
       DATABASE_URL: postgresql://${POSTGRES_USER:-crawlseo}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-crawlseo}
+    deploy:
+      resources:
+        limits:
+          memory: ${APP_MEMORY_LIMIT:-512m}
     labels:
       traefik.enable: "true"
-      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik}
       traefik.http.routers.crawlseo.rule: Host(`${CRAWLSEO_DOMAIN:?set CRAWLSEO_DOMAIN in .env}`)
       traefik.http.routers.crawlseo.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
-      traefik.http.routers.crawlseo.tls: "true"
       traefik.http.routers.crawlseo.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
       traefik.http.services.crawlseo.loadbalancer.server.port: "3000"
 
   db:
     image: postgres:16-alpine
     restart: always
+    # Trimmed from the defaults to keep the footprint small on a busy host.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=64MB
+      - -c
+      - max_connections=50
+      - -c
+      - effective_cache_size=192MB
     ports:
       # Loopback only — reachable from the host for the MCP server, never
       # from the internet.
       - "127.0.0.1:5432:5432"
     volumes:
       - db_data:/var/lib/postgresql/data
-    networks:
-      - default
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-crawlseo}
       POSTGRES_USER: ${POSTGRES_USER:-crawlseo}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    deploy:
+      resources:
+        limits:
+          memory: ${DB_MEMORY_LIMIT:-256m}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crawlseo}"]
       interval: 10s
       timeout: 5s
       retries: 5
-
-networks:
-  default:
-  traefik:
-    name: ${TRAEFIK_NETWORK:-traefik}
-    external: true
 
 volumes:
   db_data:

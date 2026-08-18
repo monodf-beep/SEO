@@ -33,12 +33,21 @@ COMPOSE="docker compose -f $COMPOSE_FILE"
 if [ "$COMPOSE_FILE" = "docker-compose.prod.yml" ]; then
   holder=$(docker ps --format '{{.Names}} {{.Ports}}' 2>/dev/null \
     | grep -E ':(80|443)->' | awk '{print $1}' | paste -sd, - || true)
+
+  # A container in network_mode: host publishes nothing in `docker ps`, so the
+  # check above cannot see it — which is exactly how Traefik runs on the target
+  # VPS. Ask the kernel who is listening instead.
+  if [ -z "$holder" ] && command -v ss >/dev/null 2>&1; then
+    ss -ltnH 2>/dev/null | awk '{print $4}' | grep -qE ':(80|443)$' \
+      && holder="a host process (network_mode: host?)"
+  fi
+
   if [ -n "$holder" ]; then
-    fail "refusing to start Caddy: ports 80/443 are already held by [$holder].
+    fail "refusing to start Caddy: ports 80/443 are already taken by [$holder].
        Something else is already fronting this host. Deploy behind it with:
          docker compose -f docker-compose.traefik.yml up -d
-       after setting TRAEFIK_NETWORK / TRAEFIK_ENTRYPOINT / TRAEFIK_CERTRESOLVER
-       in .env — see SETUP.md."
+       after setting TRAEFIK_ENTRYPOINT / TRAEFIK_CERTRESOLVER in .env
+       — see SETUP.md."
   fi
 fi
 
@@ -62,10 +71,14 @@ if [ -z "$resolved" ]; then
 fi
 
 if [ "$COMPOSE_FILE" = "docker-compose.traefik.yml" ]; then
-  network=$(grep -E '^TRAEFIK_NETWORK=' .env 2>/dev/null | cut -d= -f2- || true)
-  network=${network:-traefik}
-  docker network inspect "$network" >/dev/null 2>&1 \
-    || fail "docker network '$network' not found — set TRAEFIK_NETWORK in .env to the network Traefik is attached to"
+  # Postgres is published on the loopback for the MCP server, so a port already
+  # in use there would fail the start with a less obvious message.
+  if command -v ss >/dev/null 2>&1 \
+    && ss -ltnH 2>/dev/null | awk '{print $4}' | grep -qE '^(127\.0\.0\.1|0\.0\.0\.0|\*|\[::\]):5432$'; then
+    fail "127.0.0.1:5432 is already in use — another Postgres is published there.
+       Change the db port mapping in docker-compose.traefik.yml and the port in
+       .env.local before deploying."
+  fi
 fi
 if [ -n "$public" ] && [ "$resolved" != "$public" ]; then
   echo "warning: $DOMAIN resolves to $resolved but this host is $public" >&2

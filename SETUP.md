@@ -32,29 +32,75 @@ le Caddy provoque un conflit sur les ports 80/443 et coupe les sites existants.
 
 ### Cas du VPS srv1697018 (Traefik déjà en place)
 
-Cette machine héberge déjà `hermes-workspace-jh8p` et `hindsight-mcp` derrière
+Cette machine héberge déjà Hermes, Hindsight, Supabase et Obsidian derrière
 Traefik, avec le DNS wildcard `*.srv1697018.hstgr.cloud`. Il n'y a donc ni
 domaine à réserver ni enregistrement DNS à créer : le sous-domaine retenu ici est
 **`siip.srv1697018.hstgr.cloud`**.
 
-Il faut simplement dire au script quel réseau et quel resolver utilise ton
-Traefik. Pour les relever :
+Configuration relevée sur cette machine :
 
-```bash
-docker inspect traefik --format '{{json .Config.Cmd}}' | tr ',' '\n' | grep -Ei 'entrypoint|certificatesresolver'
-docker inspect traefik --format '{{json .NetworkSettings.Networks}}' | tr ',' '\n' | head
+| | |
+|---|---|
+| Conteneur | `traefik-traefik-1` (image `traefik:latest`) |
+| Réseau | `host` — Traefik n'est sur aucun bridge |
+| Entrypoints | `web` (:80, redirigé) et `websecure` (:443) |
+| Certresolver | `letsencrypt`, challenge HTTP |
+| Découverte | `providers.docker` avec `exposedbydefault=false` |
+
+Deux conséquences pour `docker-compose.traefik.yml` :
+
+- **Aucun réseau partagé n'est déclaré.** En `network_mode: host`, Traefik joint
+  les conteneurs directement sur leur IP de bridge. C'est exactement ainsi que
+  fonctionne le routeur `hermes-workspace-jh8p` existant, qui ne porte d'ailleurs
+  aucun label `traefik.docker.network`.
+- **`traefik.enable=true` est obligatoire**, puisque `exposedbydefault` est à
+  `false`.
+
+Il suffit donc de deux lignes dans `.env` :
+
 ```
-
-Puis compléter `.env` :
-
-```
-TRAEFIK_NETWORK=traefik
 TRAEFIK_ENTRYPOINT=websecure
 TRAEFIK_CERTRESOLVER=letsencrypt
 ```
 
-Le script vérifie que ce réseau existe avant de démarrer, plutôt que d'échouer
-plus tard sur un routage silencieux.
+Pour retrouver ces valeurs sur une autre machine — sans supposer le nom du
+conteneur, que Compose préfixe par le nom du projet :
+
+```bash
+docker ps --format '{{.Names}}\t{{.Image}}\t{{.Ports}}'
+docker inspect <nom-du-conteneur> --format '{{json .Config.Cmd}}' | tr ',' '\n' | grep -Ei 'entrypoint|certificatesresolver'
+docker inspect <nom-du-conteneur> --format '{{.HostConfig.NetworkMode}}'
+```
+
+**Si ton Traefik tourne sur un bridge et non en `host`**, l'application doit
+rejoindre ce réseau. Ajouter alors dans `docker-compose.traefik.yml` :
+
+```yaml
+services:
+  app:
+    networks: [default, traefik]
+    labels:
+      traefik.docker.network: traefik
+networks:
+  traefik:
+    name: le-nom-du-reseau
+    external: true
+```
+
+### Empreinte mémoire
+
+`docker-compose.traefik.yml` plafonne l'application à 512 Mo et Postgres à
+256 Mo, avec un `shared_buffers` réduit à 64 Mo. Ce n'est pas de la prudence
+gratuite : cette machine tournait à 92 % de swap avec la pile Supabase complète,
+et un conteneur sans limite y ferait choisir sa victime à l'OOM killer parmi les
+services déjà en production.
+
+Ajuster au besoin dans `.env` :
+
+```
+APP_MEMORY_LIMIT=512m
+DB_MEMORY_LIMIT=256m
+```
 
 ### a. Sous-domaine gratuit (uniquement s'il n'y a pas déjà de Traefik)
 
