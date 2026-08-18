@@ -73,7 +73,12 @@ fi
 if [ "$COMPOSE_FILE" = "docker-compose.traefik.yml" ]; then
   # Postgres is published on the loopback for the MCP server, so a port already
   # in use there would fail the start with a less obvious message.
-  if command -v ss >/dev/null 2>&1 \
+  #
+  # Skip the check once our own db holds it, or every re-run after the first
+  # successful deploy would trip on the container this script just started —
+  # turning a re-runnable script into a one-shot.
+  own_db=$($COMPOSE ps -q db 2>/dev/null || true)
+  if [ -z "$own_db" ] && command -v ss >/dev/null 2>&1 \
     && ss -ltnH 2>/dev/null | awk '{print $4}' | grep -qE '^(127\.0\.0\.1|0\.0\.0\.0|\*|\[::\]):5432$'; then
     fail "127.0.0.1:5432 is already in use — another Postgres is published there.
        Change the db port mapping in docker-compose.traefik.yml and the port in
@@ -128,6 +133,12 @@ fi
 
 echo
 echo "CrawlSEO is up at https://${DOMAIN}"
-echo "The first certificate can take a minute; check: $COMPOSE logs caddy"
+if [ "$COMPOSE_FILE" = "docker-compose.traefik.yml" ]; then
+  # There is no caddy service in this stack — the certificate is Traefik's,
+  # and its container is not part of this compose project.
+  echo "The first certificate can take a minute; check: docker logs \$(docker ps --filter name=traefik --format '{{.Names}}' | head -1) --tail 30"
+else
+  echo "The first certificate can take a minute; check: $COMPOSE logs caddy"
+fi
 echo
 echo "Once your account exists, set DISABLE_REGISTRATION=true in .env and re-run."
