@@ -1,0 +1,76 @@
+# Production stack: Caddy terminates TLS and is the only thing listening on the
+# public interface. The app is reachable exclusively over the Compose network,
+# and Postgres is published on the loopback only so the MCP server can reach it.
+#
+# Standalone on purpose — not an overlay on docker-compose.yml, because Compose
+# merges `ports` lists additively and the base file publishes 3000 and 5432
+# publicly. Keeping this file separate also keeps upstream merges conflict-free.
+#
+#   docker compose -f docker-compose.prod.yml up -d
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      CRAWLSEO_DOMAIN: ${CRAWLSEO_DOMAIN:?set CRAWLSEO_DOMAIN in .env}
+    depends_on:
+      app:
+        condition: service_healthy
+
+  app:
+    image: ${CRAWLSEO_IMAGE:-ghcr.io/crawlseo/crawlseo:latest}
+    restart: always
+    expose:
+      - "3000"
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-crawlseo}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-crawlseo}
+
+  db:
+    image: postgres:16-alpine
+    restart: always
+    ports:
+      # Loopback only — reachable from the host for the MCP server, never
+      # from the internet.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-crawlseo}
+      POSTGRES_USER: ${POSTGRES_USER:-crawlseo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crawlseo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:
+  caddy_data:
+  caddy_config:
