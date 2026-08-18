@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# One-command production deploy: Caddy + CrawlSEO + Postgres, with automatic
-# Let's Encrypt certificates.
+# One-command production deploy of CrawlSEO + Postgres behind TLS.
 #
-#   DOMAIN=crawlseo-fm.duckdns.org ./scripts/deploy.sh
+#   DOMAIN=siip.srv1697018.hstgr.cloud ./scripts/deploy.sh
+#
+# Picks its own reverse proxy: an existing Traefik on the host is reused,
+# otherwise a Caddy is brought up alongside.
 #
 # Safe to re-run: it reuses an existing .env instead of regenerating secrets,
 # so repeated runs act as an upgrade rather than a reinstall.
@@ -10,9 +12,18 @@ set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
-COMPOSE="docker compose -f docker-compose.prod.yml"
-
 fail() { echo "error: $*" >&2; exit 1; }
+
+# A host already running Traefik owns 80/443, so bringing up our own Caddy
+# would collide with it and take the existing sites down. Detect that case and
+# route through Traefik instead.
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -qi '^traefik$'; then
+  COMPOSE_FILE=docker-compose.traefik.yml
+  echo "detected a running Traefik — deploying behind it, no Caddy"
+else
+  COMPOSE_FILE=docker-compose.prod.yml
+fi
+COMPOSE="docker compose -f $COMPOSE_FILE"
 
 # ---------------------------------------------------------------------------
 # Domain
@@ -21,7 +32,7 @@ fail() { echo "error: $*" >&2; exit 1; }
 if [ -f .env ]; then
   DOMAIN=${DOMAIN:-$(grep -E '^CRAWLSEO_DOMAIN=' .env | cut -d= -f2- || true)}
 fi
-[ -n "${DOMAIN:-}" ] || fail "set DOMAIN, e.g. DOMAIN=crawlseo-fm.duckdns.org $0"
+[ -n "${DOMAIN:-}" ] || fail "set DOMAIN, e.g. DOMAIN=siip.srv1697018.hstgr.cloud $0"
 
 # Let's Encrypt validates over port 80, so a domain that does not resolve here
 # yet produces a certificate failure that is slow and confusing to diagnose.
@@ -31,6 +42,13 @@ public=$(curl -fsS --max-time 10 https://api.ipify.org 2>/dev/null || true)
 
 if [ -z "$resolved" ]; then
   fail "$DOMAIN does not resolve — create the DNS record first (see SETUP.md)"
+fi
+
+if [ "$COMPOSE_FILE" = "docker-compose.traefik.yml" ]; then
+  network=$(grep -E '^TRAEFIK_NETWORK=' .env 2>/dev/null | cut -d= -f2- || true)
+  network=${network:-traefik}
+  docker network inspect "$network" >/dev/null 2>&1 \
+    || fail "docker network '$network' not found — set TRAEFIK_NETWORK in .env to the network Traefik is attached to"
 fi
 if [ -n "$public" ] && [ "$resolved" != "$public" ]; then
   echo "warning: $DOMAIN resolves to $resolved but this host is $public" >&2

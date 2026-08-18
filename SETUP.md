@@ -20,28 +20,64 @@ C'est le chemin recommandé : Google refuse les URI de redirection OAuth en
 `http://` sur autre chose que `localhost`, donc une adresse IP nue ne permet pas
 de se connecter. Il faut un nom de domaine et un certificat.
 
-### a. Obtenir un sous-domaine gratuit
+`scripts/deploy.sh` choisit tout seul son reverse proxy :
+
+| Situation | Fichier utilisé | Ce qui se passe |
+|---|---|---|
+| Un conteneur `traefik` tourne déjà | `docker-compose.traefik.yml` | on se greffe dessus par des labels, aucun port publié |
+| Aucun Traefik | `docker-compose.prod.yml` | un Caddy est monté, il prend 80 et 443 |
+
+⚠️ **Ne jamais lancer les deux.** Sur un hôte qui fait déjà tourner Traefik, monter
+le Caddy provoque un conflit sur les ports 80/443 et coupe les sites existants.
+
+### Cas du VPS srv1697018 (Traefik déjà en place)
+
+Cette machine héberge déjà `hermes-workspace-jh8p` et `hindsight-mcp` derrière
+Traefik, avec le DNS wildcard `*.srv1697018.hstgr.cloud`. Il n'y a donc ni
+domaine à réserver ni enregistrement DNS à créer : le sous-domaine retenu ici est
+**`siip.srv1697018.hstgr.cloud`**.
+
+Il faut simplement dire au script quel réseau et quel resolver utilise ton
+Traefik. Pour les relever :
+
+```bash
+docker inspect traefik --format '{{json .Config.Cmd}}' | tr ',' '\n' | grep -Ei 'entrypoint|certificatesresolver'
+docker inspect traefik --format '{{json .NetworkSettings.Networks}}' | tr ',' '\n' | head
+```
+
+Puis compléter `.env` :
+
+```
+TRAEFIK_NETWORK=traefik
+TRAEFIK_ENTRYPOINT=websecure
+TRAEFIK_CERTRESOLVER=letsencrypt
+```
+
+Le script vérifie que ce réseau existe avant de démarrer, plutôt que d'échouer
+plus tard sur un routage silencieux.
+
+### a. Sous-domaine gratuit (uniquement s'il n'y a pas déjà de Traefik)
 
 Si tu ne possèdes pas déjà un domaine, [DuckDNS](https://duckdns.org) en donne
 un permanent et gratuit, compatible Let's Encrypt :
 
 1. Se connecter sur <https://duckdns.org> (GitHub, Google ou Reddit)
-2. Réserver un sous-domaine — la configuration par défaut ici utilise
-   **`siip-seo`**, donc `siip-seo.duckdns.org`
+2. Réserver un sous-domaine, par exemple `siip-seo`
 3. Coller l'IPv4 publique du VPS dans le champ « current ip » et valider
 
-Vérifier depuis le VPS que la résolution est bonne :
+Vérifier depuis la machine que la résolution est bonne :
 
 ```bash
 getent ahostsv4 siip-seo.duckdns.org
 curl -s https://api.ipify.org    # doit afficher la même IP
 ```
 
-Si tu possèdes déjà un domaine en `siip`, saute cette étape et crée simplement
-un enregistrement A vers l'IP du VPS.
+Si tu possèdes déjà un domaine, saute cette étape et crée simplement un
+enregistrement A vers l'IP de la machine.
 
 ### b. Ouvrir les ports 80 et 443
 
+Uniquement dans ce cas — avec Traefik déjà en place, les ports sont ouverts.
 Let's Encrypt valide le certificat via le port 80. Sur un VPS Hostinger, penser
 au pare-feu du panneau d'administration **et** à celui de la machine :
 
@@ -49,7 +85,8 @@ au pare-feu du panneau d'administration **et** à celui de la machine :
 ufw allow 80/tcp && ufw allow 443/tcp
 ```
 
-Le port 3000 doit rester fermé : la stack de production ne l'expose pas.
+Le port 3000 doit rester fermé : aucune des deux stacks de production ne
+l'expose.
 
 ### c. Déployer
 
@@ -59,21 +96,22 @@ git clone -b claude/opensource-seo-platform-cj6dkd \
   https://github.com/monodf-beep/SEO.git crawlseo
 cd crawlseo
 
-DOMAIN=siip-seo.duckdns.org ./scripts/deploy.sh
+DOMAIN=siip.srv1697018.hstgr.cloud ./scripts/deploy.sh
 ```
 
 Le premier passage génère `.env` puis s'arrête pour réclamer les identifiants
 Google OAuth (étape 2 ci-dessous). Une fois collés dans `.env`, relancer la même
-commande : elle récupère les images, démarre Caddy, l'application et Postgres,
-attend que le healthcheck passe et affiche l'URL.
+commande : elle récupère les images, démarre la stack, attend que le healthcheck
+passe et affiche l'URL.
 
 Le script est ré-exécutable : il ne régénère pas les secrets si `.env` existe,
 donc un second passage vaut mise à jour, pas réinstallation.
 
-**Ce que fait `docker-compose.prod.yml`** : Caddy est seul à écouter sur
-l'extérieur (80/443, certificat Let's Encrypt automatique et renouvelé),
-l'application n'est joignable que par le réseau Compose, et Postgres n'est
-publié que sur `127.0.0.1:5432` pour rester accessible au serveur MCP.
+Dans les deux cas, l'application n'est joignable que par le réseau Docker et
+Postgres n'est publié que sur `127.0.0.1:5432`, pour rester accessible au serveur
+MCP sans être exposé. La différence tient au proxy :
+`docker-compose.traefik.yml` se contente de poser des labels sur le Traefik
+existant, quand `docker-compose.prod.yml` monte son propre Caddy sur 80/443.
 
 ## 1. Générer la configuration
 
@@ -92,7 +130,7 @@ Pour un déploiement derrière un nom de domaine, passe le domaine — `NEXTAUTH
 et `CRAWLSEO_DOMAIN` en découlent :
 
 ```bash
-DOMAIN=siip-seo.duckdns.org ./scripts/bootstrap.sh
+DOMAIN=siip.srv1697018.hstgr.cloud ./scripts/bootstrap.sh
 ```
 
 `scripts/deploy.sh` appelle ça pour toi, ce n'est utile que pour un usage manuel.
@@ -109,7 +147,7 @@ données Search Console.
 4. Type d'application : **Application Web**
 5. URI de redirection autorisée :
    - en local : `http://localhost:3000/api/auth/callback/google`
-   - en production : `https://siip-seo.duckdns.org/api/auth/callback/google`
+   - en production : `https://siip.srv1697018.hstgr.cloud/api/auth/callback/google`
 
    ⚠️ Google n'accepte `http://` que pour `localhost`. Une IP nue ou un
    `http://` public est refusé — d'où le passage obligatoire par un domaine.

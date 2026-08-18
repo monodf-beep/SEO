@@ -1,0 +1,80 @@
+# Deployment for a host that already runs Traefik (the case on
+# srv1697018.hstgr.cloud, alongside hermes and hindsight-mcp).
+#
+# Traefik owns 80/443 and issues the certificate, so nothing here publishes a
+# public port — use this file instead of docker-compose.prod.yml, never both,
+# or Caddy and Traefik will fight over the same ports.
+#
+#   docker compose -f docker-compose.traefik.yml up -d
+#
+# Entrypoint and certresolver names are per-installation. Check yours with:
+#   docker inspect traefik --format '{{json .Config.Cmd}}' | tr ',' '\n'
+# then set TRAEFIK_ENTRYPOINT / TRAEFIK_CERTRESOLVER / TRAEFIK_NETWORK in .env.
+
+services:
+  app:
+    image: ${CRAWLSEO_IMAGE:-ghcr.io/crawlseo/crawlseo:latest}
+    restart: always
+    expose:
+      - "3000"
+    env_file:
+      - path: .env
+        required: false
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - default
+      - traefik
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-crawlseo}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-crawlseo}
+    labels:
+      traefik.enable: "true"
+      traefik.docker.network: ${TRAEFIK_NETWORK:-traefik}
+      traefik.http.routers.crawlseo.rule: Host(`${CRAWLSEO_DOMAIN:?set CRAWLSEO_DOMAIN in .env}`)
+      traefik.http.routers.crawlseo.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.crawlseo.tls: "true"
+      traefik.http.routers.crawlseo.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.services.crawlseo.loadbalancer.server.port: "3000"
+
+  db:
+    image: postgres:16-alpine
+    restart: always
+    ports:
+      # Loopback only — reachable from the host for the MCP server, never
+      # from the internet.
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - default
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-crawlseo}
+      POSTGRES_USER: ${POSTGRES_USER:-crawlseo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-changeme}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-crawlseo}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  default:
+  traefik:
+    name: ${TRAEFIK_NETWORK:-traefik}
+    external: true
+
+volumes:
+  db_data:
