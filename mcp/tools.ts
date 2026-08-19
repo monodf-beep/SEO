@@ -123,4 +123,13 @@ export const tools = [
         .describe('Language code: "en" (US SERP) or "fr" (France SERP), default "en"'),
     },
   },
+  {
+    name: "get_search_types",
+    description:
+      "Get the site's Google traffic broken down by search surface (Web, Images, Video, News, Discover), with top queries for Images/Video/News. Free — uses the connected Search Console.",
+    schema: {
+      siteId: z.string().describe("The site ID"),
+      days: z.number().optional().default(28).describe("Lookback period in days (default 28)"),
+    },
+  },
 ] as const;

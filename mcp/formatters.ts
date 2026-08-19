@@ -220,3 +220,48 @@ export function formatPaa(
 
   return `${paa.length} "People Also Ask" question(s) for "${seed}":\n\n` + lines.join("\n").trimEnd();
 }
+
+export function formatSearchTypes(
+  days: number,
+  breakdown: {
+    type: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+    topQueries: { query: string; clicks: number; impressions: number; position: number }[];
+  }[]
+): string {
+  const lines: string[] = [];
+  lines.push(`Search type breakdown (last ${days} days):`);
+  lines.push("");
+
+  const headers = ["Surface", "Clicks", "Impressions", "CTR", "Position"];
+  const rows = breakdown.map((b) => [
+    b.type,
+    num(b.clicks),
+    num(b.impressions),
+    b.impressions > 0 ? pct(b.ctr) : "-",
+    b.position > 0 ? b.position.toFixed(1) : "-",
+  ]);
+  lines.push(formatTable(headers, rows));
+
+  for (const surface of breakdown) {
+    if (surface.topQueries.length === 0) continue;
+    lines.push("");
+    lines.push(`-- Top ${surface.type} queries --`);
+    lines.push(
+      formatTable(
+        ["Query", "Clicks", "Impressions", "Position"],
+        surface.topQueries.map((q) => [
+          q.query,
+          num(q.clicks),
+          num(q.impressions),
+          q.position.toFixed(1),
+        ])
+      )
+    );
+  }
+
+  return lines.join("\n");
+}

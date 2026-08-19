@@ -144,6 +144,78 @@ export async function fetchSearchAnalytics(
 }
 
 /**
+ * Per-search-type breakdown (web, image, video, news, discover).
+ * Each Google surface is queried separately since GSC has no "type" dimension.
+ */
+
+export const SEARCH_TYPES = ["web", "image", "video", "news", "discover"] as const;
+export type SearchType = (typeof SEARCH_TYPES)[number];
+
+export type SearchTypeSummary = {
+  type: SearchType;
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+  topQueries: { query: string; clicks: number; impressions: number; position: number }[];
+};
+
+// Discover has no query dimension, so top queries are only fetched for these.
+const QUERYABLE_TYPES: SearchType[] = ["image", "video", "news"];
+
+export async function fetchSearchTypeBreakdown(
+  userId: string,
+  siteUrl: string,
+  startDate: string,
+  endDate: string
+): Promise<SearchTypeSummary[]> {
+  const accessToken = await getAccessToken(userId);
+
+  async function query(body: Record<string, unknown>): Promise<SearchAnalyticsRow[]> {
+    const response = await fetch(
+      `${GSC_API_BASE}/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ startDate, endDate, ...body }),
+      }
+    );
+    if (!response.ok) return [];
+    const data = (await response.json()) as { rows?: SearchAnalyticsRow[] };
+    return data.rows ?? [];
+  }
+
+  return Promise.all(
+    SEARCH_TYPES.map(async (type): Promise<SearchTypeSummary> => {
+      const [totals, queries] = await Promise.all([
+        query({ type, rowLimit: 1 }),
+        QUERYABLE_TYPES.includes(type)
+          ? query({ type, dimensions: ["query"], rowLimit: 10 })
+          : Promise.resolve([]),
+      ]);
+
+      const total = totals[0];
+      return {
+        type,
+        clicks: total?.clicks ?? 0,
+        impressions: total?.impressions ?? 0,
+        ctr: total ? Number(total.ctr.toFixed(4)) : 0,
+        position: total ? Number(total.position.toFixed(2)) : 0,
+        topQueries: queries.map((row) => ({
+          query: row.keys[0],
+          clicks: row.clicks,
+          impressions: row.impressions,
+          position: Number(row.position.toFixed(2)),
+        })),
+      };
+    })
+  );
+}
+
+/**
  * Fetches search analytics aggregated by page
  */
 export async function fetchPageAnalytics(

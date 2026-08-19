@@ -46,6 +46,8 @@ type PageSnapshot = {
   externalOutlinks: string[];
   links: LinkInfo[];
   hasSchema: boolean;
+  hasOgTags: boolean;
+  hasTwitterCard: boolean;
   hreflangTags: { lang: string; href: string }[];
   imageCount: number;
   imagesMissingAlt: number;
@@ -225,6 +227,12 @@ function parseHtml(
     /\bitemscope\b/i.test(html) ||
     /\bitemtype\b/i.test(html);
 
+  // Social sharing meta: og:title + og:image drive link previews everywhere
+  const hasOgTags =
+    /<meta[^>]+property=["']og:title["']/i.test(html) &&
+    /<meta[^>]+property=["']og:image["']/i.test(html);
+  const hasTwitterCard = /<meta[^>]+name=["']twitter:card["']/i.test(html);
+
   // hreflang tags
   const hreflangTags = [
     ...html.matchAll(
@@ -331,6 +339,8 @@ function parseHtml(
     externalOutlinks: [...new Set(externalOutlinks)],
     links,
     hasSchema,
+    hasOgTags,
+    hasTwitterCard,
     hreflangTags,
     imageCount,
     imagesMissingAlt,
@@ -553,6 +563,24 @@ function issuesFromPage(page: PageSnapshot, _seedOrigin: string): IssueInput[] {
       severity: "INFO",
       message: "No structured data (JSON-LD / microdata)",
       details: rem("MISSING_SCHEMA"),
+    });
+  }
+
+  if (!page.hasOgTags) {
+    issues.push({
+      url,
+      type: "MISSING_SOCIAL_META",
+      severity: "WARNING",
+      message: "Missing Open Graph tags (og:title / og:image)",
+      details: { hasTwitterCard: page.hasTwitterCard, ...rem("MISSING_SOCIAL_META") },
+    });
+  } else if (!page.hasTwitterCard) {
+    issues.push({
+      url,
+      type: "MISSING_SOCIAL_META",
+      severity: "INFO",
+      message: "Open Graph present but no Twitter Card (twitter:card)",
+      details: { hasOgTags: true, ...rem("MISSING_SOCIAL_META") },
     });
   }
 

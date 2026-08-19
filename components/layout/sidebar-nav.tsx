@@ -17,6 +17,7 @@ import {
   Bot,
   Link as LinkIcon,
   SearchCheck,
+  Layers,
   type LucideIcon,
 } from "lucide-react";
 
@@ -58,6 +59,7 @@ export function SidebarNav({
         items: [
           { href: `/sites/${activeSiteId}`, label: "Overview", icon: LayoutDashboard, exact: true },
           { href: `/sites/${activeSiteId}/keywords`, label: "Keywords", icon: Search },
+          { href: `/sites/${activeSiteId}/search-types`, label: "Search Types", icon: Layers },
           { href: `/sites/${activeSiteId}/saved-keywords`, label: "Saved Keywords", icon: Bookmark },
           { href: `/sites/${activeSiteId}/pages`, label: "Pages", icon: FileText },
           { href: `/sites/${activeSiteId}/crawl`, label: "Crawl / Audit", icon: Bug },

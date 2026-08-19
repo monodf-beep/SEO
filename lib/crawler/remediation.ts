@@ -79,4 +79,9 @@ export const REMEDIATION: Record<string, { title: string; howToFix: string }> = 
     howToFix:
       "Reduce the HTML payload by removing inline CSS/JS, deferring non-critical resources, lazy-loading images, and minifying the HTML output. Aim for under 3 MB per page.",
   },
+  MISSING_SOCIAL_META: {
+    title: "Missing Social Sharing Tags",
+    howToFix:
+      "Add Open Graph meta tags (og:title, og:description, og:image with a 1200x630 image) and a twitter:card tag so links shared on social networks render a rich preview instead of a bare URL.",
+  },
 };

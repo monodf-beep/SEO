@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "IssueType" ADD VALUE 'MISSING_SOCIAL_META';

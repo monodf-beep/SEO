@@ -290,6 +290,7 @@ enum IssueType {
   SLOW_PAGE             // Load time > 3s
   MIXED_CONTENT         // HTTP resources on HTTPS page
   LARGE_PAGE            // Page size > 3MB
+  MISSING_SOCIAL_META   // No Open Graph / Twitter Card tags
 }
 
 enum IssueSeverity {

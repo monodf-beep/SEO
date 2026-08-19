@@ -26,6 +26,8 @@ import { getAllOpportunities } from "../lib/seo-opportunities";
 import { runSiteCrawl } from "../lib/crawler/engine";
 import { fetchQuestions, supportedQuestionLanguages } from "../lib/google/questions";
 import { peopleAlsoAsk } from "../lib/dataforseo/client";
+import { fetchSearchTypeBreakdown } from "../lib/google/gsc-client";
+import { getDateRange } from "../lib/date-utils";
 
 import {
   formatSiteOverview,
@@ -37,6 +39,7 @@ import {
   formatOpportunities,
   formatQuestions,
   formatPaa,
+  formatSearchTypes,
 } from "./formatters";
 
 // ---------------------------------------------------------------------------
@@ -428,6 +431,39 @@ server.tool(
     }
 
     return { content: [{ type: "text", text: formatPaa(query, paa) }] };
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 13. get_search_types
+// ---------------------------------------------------------------------------
+
+server.tool(
+  "get_search_types",
+  "Get the site's Google traffic broken down by search surface (Web, Images, Video, News, Discover), with top queries for Images/Video/News. Free — uses the connected Search Console.",
+  {
+    siteId: z.string().describe("The site ID"),
+    days: z.number().optional().default(28).describe("Lookback period in days (default 28)"),
+  },
+  async ({ siteId, days }) => {
+    const site = await db.site.findUnique({
+      where: { id: siteId },
+      select: { userId: true, gscProperty: true },
+    });
+    if (!site) {
+      return { content: [{ type: "text", text: `Site not found: ${siteId}` }] };
+    }
+    if (!site.gscProperty) {
+      return {
+        content: [
+          { type: "text", text: "Google Search Console is not connected for this site." },
+        ],
+      };
+    }
+
+    const { start, end } = getDateRange(days);
+    const breakdown = await fetchSearchTypeBreakdown(site.userId, site.gscProperty, start, end);
+    return { content: [{ type: "text", text: formatSearchTypes(days, breakdown) }] };
   }
 );
 
