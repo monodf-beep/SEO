@@ -56,7 +56,7 @@ export async function DashboardMetrics({ siteId, days = 28 }: MetricsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <MetricCard
-        label="Clicks"
+        label="Clics"
         value={formatCompact(current.clicks)}
         delta={deltas.clicks}
         deltaLabel={formatDeltaPercent(deltas.clicks)}
@@ -70,14 +70,14 @@ export async function DashboardMetrics({ siteId, days = 28 }: MetricsProps) {
         hint={`Last ${days} days vs prior`}
       />
       <MetricCard
-        label="Avg position"
+        label="Position moy."
         value={current.avgPosition > 0 ? current.avgPosition.toFixed(1) : "—"}
         delta={deltas.avgPosition}
         deltaLabel={formatDeltaPosition(deltas.avgPosition)}
-        hint="Weighted by impressions · lower is better"
+        hint="Pondérée par impressions · plus bas = mieux"
       />
       <MetricCard
-        label="Avg CTR"
+        label="CTR moy."
         value={formatCtr(current.avgCtr)}
         delta={deltas.avgCtr}
         deltaLabel={formatDeltaPercent(deltas.avgCtr)}

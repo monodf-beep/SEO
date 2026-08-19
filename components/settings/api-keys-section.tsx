@@ -35,10 +35,10 @@ export function ApiKeysSection({
       });
       const data = await res.json();
       setTestResult(data.success === true);
-      if (!data.success) setError("Invalid credentials");
+      if (!data.success) setError("Identifiants invalides");
     } catch {
       setTestResult(false);
-      setError("Connection failed");
+      setError("Échec de la connexion");
     } finally {
       setTesting(false);
     }
@@ -66,10 +66,10 @@ export function ApiKeysSection({
         setTestResult(null);
       } else {
         const data = await res.json();
-        setError(data.error || "Failed to save");
+        setError(data.error || "Échec de l'enregistrement");
       }
     } catch {
-      setError("Save failed");
+      setError("Échec de l'enregistrement");
     } finally {
       setSaving(false);
     }
@@ -93,7 +93,7 @@ export function ApiKeysSection({
         }));
       }
     } catch {
-      setError("Delete failed");
+      setError("Échec de la suppression");
     } finally {
       setDeleting(false);
     }
@@ -102,11 +102,11 @@ export function ApiKeysSection({
   return (
     <div className="panel p-5">
       <h3 className="font-heading text-lg font-semibold text-foreground">
-        External API Keys
+        Clés d'API externes
       </h3>
       <p className="mt-1 text-sm text-muted-foreground">
-        Connect third-party APIs for advanced SEO data like keyword volume,
-        domain analysis, and backlinks.
+        Connectez des API tierces pour des données SEO avancées : volumes de
+        mots-clés, analyse de domaine, backlinks.
       </p>
 
       <div className="mt-5 rounded-lg border border-border bg-card p-4">
@@ -114,19 +114,19 @@ export function ApiKeysSection({
           <div>
             <h4 className="font-medium text-foreground">DataForSEO</h4>
             <p className="text-xs text-muted-foreground">
-              Keyword research, domain analysis, backlink data
+              Recherche de mots-clés, analyse de domaine, backlinks
             </p>
           </div>
           <div className="flex items-center gap-2">
             {isConnected ? (
               <span className="flex items-center gap-1.5 rounded-full bg-signal/10 px-2.5 py-1 text-xs font-medium text-signal">
                 <CheckCircle2 className="size-3.5" />
-                Connected
+                Connecté
               </span>
             ) : (
               <span className="flex items-center gap-1.5 rounded-full bg-muted px-2.5 py-1 text-xs font-medium text-muted-foreground">
                 <XCircle className="size-3.5" />
-                Not configured
+                Non configuré
               </span>
             )}
           </div>
@@ -135,9 +135,9 @@ export function ApiKeysSection({
         {isConnected ? (
           <div className="mt-4 flex items-center justify-between">
             <p className="text-xs text-muted-foreground">
-              Last updated:{" "}
+              Dernière mise à jour :{" "}
               {status.dataforseo.updatedAt
-                ? new Date(status.dataforseo.updatedAt).toLocaleDateString()
+                ? new Date(status.dataforseo.updatedAt).toLocaleDateString("fr-FR")
                 : "—"}
             </p>
             <button
@@ -151,7 +151,7 @@ export function ApiKeysSection({
               ) : (
                 <Trash2 className="size-3" />
               )}
-              Remove
+              Retirer
             </button>
           </div>
         ) : (
@@ -170,13 +170,13 @@ export function ApiKeysSection({
             </div>
             <div>
               <label className="mb-1 block text-xs font-medium text-muted-foreground">
-                Password
+                Mot de passe
               </label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="API password"
+                placeholder="Mot de passe API"
                 className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
             </div>
@@ -188,7 +188,7 @@ export function ApiKeysSection({
             {testResult === true && (
               <p className="flex items-center gap-1.5 text-xs text-signal">
                 <CheckCircle2 className="size-3.5" />
-                Connection successful
+                Connexion réussie
               </p>
             )}
 
@@ -204,7 +204,7 @@ export function ApiKeysSection({
                 ) : (
                   <FlaskConical className="size-3" />
                 )}
-                Test Connection
+                Tester la connexion
               </button>
               <button
                 type="button"
@@ -217,7 +217,7 @@ export function ApiKeysSection({
                 ) : (
                   <Save className="size-3" />
                 )}
-                Save Key
+                Enregistrer la clé
               </button>
             </div>
           </div>

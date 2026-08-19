@@ -188,7 +188,7 @@ export async function getAllOpportunities(siteId: string) {
     items.push({
       type: "striking_distance",
       title: k.query,
-      detail: `Position ${k.position.toFixed(1)} · ${k.impressions.toLocaleString()} impressions · push into top 3`,
+      detail: `Position ${k.position.toFixed(1)} · ${k.impressions.toLocaleString()} impressions · à pousser dans le top 3`,
       query: k.query,
       metric: k.impressions,
       severity: k.impressions > 200 ? "high" : "medium",
@@ -199,7 +199,7 @@ export async function getAllOpportunities(siteId: string) {
     items.push({
       type: "low_ctr",
       title: k.query,
-      detail: `CTR ${(k.ctr * 100).toFixed(1)}% vs ~${(k.expectedCtr * 100).toFixed(0)}% expected at pos ${k.position.toFixed(1)} — rewrite title/meta`,
+      detail: `CTR ${(k.ctr * 100).toFixed(1)}% vs ~${(k.expectedCtr * 100).toFixed(0)}% attendu en pos. ${k.position.toFixed(1)} — réécrire title/meta`,
       query: k.query,
       metric: k.impressions,
       severity: k.ctrGap > 0.05 ? "high" : "medium",
@@ -210,7 +210,7 @@ export async function getAllOpportunities(siteId: string) {
     items.push({
       type: "content_decay",
       title: p.url,
-      detail: `Clicks ${p.previousClicks} → ${p.currentClicks} (${p.changePct.toFixed(0)}%) vs prior 28 days`,
+      detail: `Clics ${p.previousClicks} → ${p.currentClicks} (${p.changePct.toFixed(0)} %) vs 28 jours précédents`,
       url: p.url,
       metric: p.changePct,
       severity: p.changePct < -50 ? "high" : "medium",
@@ -221,7 +221,7 @@ export async function getAllOpportunities(siteId: string) {
     items.push({
       type: "cannibalization",
       title: c.query,
-      detail: `${c.pages.length} landing pages competing · top: ${c.pages[0]?.url}`,
+      detail: `${c.pages.length} pages de destination en concurrence · principale : ${c.pages[0]?.url}`,
       query: c.query,
       severity: "medium",
     });

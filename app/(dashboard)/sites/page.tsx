@@ -31,17 +31,17 @@ export default async function SitesPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Properties"
+        eyebrow="Propriétés"
         title="Sites"
-        description="Connect and sync Google Search Console properties."
+        description="Connectez et synchronisez des propriétés Google Search Console."
         actions={<AddSiteModal />}
       />
 
       {sites.length === 0 ? (
         <EmptyState
           icon="⊕"
-          title="Connect your first property"
-          description="Choose a domain or URL-prefix property from Search Console. CrawlSEO stores your metrics locally."
+          title="Connectez votre première propriété"
+          description="Choisissez une propriété de domaine ou à préfixe d'URL dans la Search Console. CrawlSEO stocke vos données en local."
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -61,11 +61,11 @@ export default async function SitesPage() {
 
                 <div className="mt-5 grid grid-cols-3 gap-2 border-t border-border/50 pt-4">
                   <MiniStat
-                    label="Keyword rows"
+                    label="Mots-clés"
                     value={formatCompact(site._count.keywords)}
                   />
                   <MiniStat
-                    label="Page rows"
+                    label="Pages"
                     value={formatCompact(site._count.pages)}
                   />
                   <MiniStat

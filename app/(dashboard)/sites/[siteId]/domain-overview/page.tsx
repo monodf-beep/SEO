@@ -28,7 +28,7 @@ export default async function DomainOverviewPage({ params }: Props) {
       <PageHeader
         eyebrow={site.domain}
         title="Domain Overview"
-        description="Organic traffic, keyword rankings, and backlink metrics"
+        description="Trafic organique, positions des mots-clés et métriques de backlinks"
       />
       <DomainOverviewClient
         siteId={siteId}

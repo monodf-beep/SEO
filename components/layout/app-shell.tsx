@@ -30,7 +30,7 @@ export function AppShell({
   children,
   sites,
 }: AppShellProps) {
-  const displayName = name || email?.split("@")[0] || "User";
+  const displayName = name || email?.split("@")[0] || "Utilisateur";
   const initial = displayName.charAt(0).toUpperCase();
   const pathname = usePathname();
 
@@ -80,7 +80,7 @@ export function AppShell({
             <p className="text-[15px] font-semibold tracking-tight text-foreground">
               CrawlSEO
             </p>
-            <p className="text-[11px] text-muted-foreground">Search operations</p>
+            <p className="text-[11px] text-muted-foreground">Pilotage SEO</p>
           </div>
         )}
       </div>
@@ -108,7 +108,7 @@ export function AppShell({
           ) : (
             <>
               <PanelLeftClose className="size-4" />
-              <span>Collapse</span>
+              <span>Replier</span>
             </>
           )}
         </button>
@@ -141,7 +141,7 @@ export function AppShell({
             </div>
 
             <div className="mb-3 flex items-center justify-between gap-2 px-0.5">
-              <span className="text-[11px] text-muted-foreground">Theme</span>
+              <span className="text-[11px] text-muted-foreground">Thème</span>
               <ThemeToggle />
             </div>
 
@@ -150,7 +150,7 @@ export function AppShell({
               className="flex w-full items-center justify-center gap-2 rounded-full border border-border bg-secondary/60 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-secondary"
             >
               <LogOut className="size-3.5" />
-              Logout
+              Déconnexion
             </a>
           </div>
         )}

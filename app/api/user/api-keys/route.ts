@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const keys = await db.apiKey.findMany({
@@ -28,7 +28,7 @@ export async function GET() {
     return Response.json(providers);
   } catch (error) {
     console.error("API keys GET error:", error);
-    return Response.json({ error: "Failed to load API keys" }, { status: 500 });
+    return Response.json({ error: "Échec du chargement des clés d'API" }, { status: 500 });
   }
 }
 
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const body = (await req.json()) as {
@@ -47,13 +47,13 @@ export async function POST(req: Request) {
 
     if (!body.provider || !body.login || !body.password) {
       return Response.json(
-        { error: "Missing required fields: provider, login, password" },
+        { error: "Champs obligatoires manquants : provider, login, password" },
         { status: 400 }
       );
     }
 
     if (body.provider !== "dataforseo") {
-      return Response.json({ error: "Unsupported provider" }, { status: 400 });
+      return Response.json({ error: "Fournisseur non pris en charge" }, { status: 400 });
     }
 
     const saved = await db.apiKey.upsert({
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     );
   } catch (error) {
     console.error("API keys POST error:", error);
-    return Response.json({ error: "Failed to save API key" }, { status: 500 });
+    return Response.json({ error: "Échec de l'enregistrement de la clé d'API" }, { status: 500 });
   }
 }
 
@@ -89,12 +89,12 @@ export async function DELETE(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const body = (await req.json()) as { provider?: string };
     if (!body.provider) {
-      return Response.json({ error: "Missing provider" }, { status: 400 });
+      return Response.json({ error: "Fournisseur manquant" }, { status: 400 });
     }
 
     await db.apiKey.delete({
@@ -109,6 +109,6 @@ export async function DELETE(req: Request) {
     return Response.json({ success: true });
   } catch (error) {
     console.error("API keys DELETE error:", error);
-    return Response.json({ error: "Failed to delete API key" }, { status: 500 });
+    return Response.json({ error: "Échec de la suppression de la clé d'API" }, { status: 500 });
   }
 }

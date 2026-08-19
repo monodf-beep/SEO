@@ -57,7 +57,7 @@ export function SiteSwitcher({ sites }: { sites: Site[] }) {
   return (
     <div>
       <p className="mb-1.5 px-1 text-[10px] uppercase tracking-[0.14em] text-muted-foreground">
-        Switch site
+        Changer de site
       </p>
       <Select value={selected} onValueChange={handleSiteChange}>
         <SelectTrigger className="w-full border-border/70 bg-panel">

@@ -24,7 +24,7 @@ export async function TopKeywords({
       <div className="flex items-center justify-between border-b border-border px-5 py-4">
         <div>
           <h3 className="font-heading text-atom-subheader font-semibold text-foreground">
-            Top keywords
+            Meilleurs mots-clés
           </h3>
           <p className="text-atom-caption text-muted-foreground">
             Ranked by clicks · last {days} days
@@ -34,13 +34,13 @@ export async function TopKeywords({
           href={`/sites/${siteId}/keywords`}
           className="text-sm font-medium text-primary hover:underline"
         >
-          View all
+          Tout voir
         </Link>
       </div>
 
       {topKeywords.length === 0 ? (
         <div className="px-5 py-10 text-center text-sm text-muted-foreground">
-          No keyword data yet. Run a GSC sync.
+          Pas encore de données. Lancez une synchronisation Search Console.
         </div>
       ) : (
         <div className="overflow-x-auto">
@@ -54,7 +54,7 @@ export async function TopKeywords({
                   Pos
                 </th>
                 <th className="px-4 py-3 text-right text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                  Clicks
+                  Clics
                 </th>
                 <th className="px-4 py-3 text-right text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                   Impr.

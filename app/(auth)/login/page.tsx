@@ -29,16 +29,16 @@ export default async function LoginPage() {
             CrawlSEO
           </h1>
           <p className="mt-2 text-atom-body text-muted-foreground">
-            Self-hosted search ops for founders
+            Pilotage SEO auto-hébergé
           </p>
         </div>
 
         <div className="panel-elevated p-8">
           <h2 className="font-heading text-atom-title font-semibold text-foreground">
-            Sign in
+            Connexion
           </h2>
           <p className="mt-2 text-atom-body text-muted-foreground">
-            Connect Google Search Console with read-only access.
+            Connectez Google Search Console en lecture seule.
           </p>
 
           <form
@@ -49,7 +49,7 @@ export default async function LoginPage() {
             }}
           >
             <Button type="submit" size="lg" className="w-full">
-              Continue with Google
+              Continuer avec Google
             </Button>
           </form>
 

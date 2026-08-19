@@ -9,7 +9,7 @@ export async function GET() {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const sites = await db.site.findMany({
@@ -36,7 +36,7 @@ export async function GET() {
 
     return Response.json(
       {
-        error: error instanceof Error ? error.message : "Failed to fetch sites",
+        error: error instanceof Error ? error.message : "Échec de la récupération des sites",
       },
       { status: 500 }
     );
@@ -48,7 +48,7 @@ export async function POST(req: Request) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { domain, gscProperty } = (await req.json()) as {
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
 
     if (!domain || !gscProperty) {
       return Response.json(
-        { error: "Missing domain or gscProperty" },
+        { error: "Domaine ou propriété GSC manquant" },
         { status: 400 }
       );
     }
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
       await assertPublicDomain(domain);
     } catch {
       return Response.json(
-        { error: "Domain must resolve to a public IP address" },
+        { error: "Le domaine doit résoudre vers une adresse IP publique" },
         { status: 400 }
       );
     }
@@ -85,7 +85,7 @@ export async function POST(req: Request) {
 
     if (existing) {
       return Response.json(
-        { error: "Site already exists" },
+        { error: "Ce site existe déjà" },
         { status: 409 }
       );
     }
@@ -118,7 +118,7 @@ export async function POST(req: Request) {
 
     return Response.json(
       {
-        error: error instanceof Error ? error.message : "Failed to create site",
+        error: error instanceof Error ? error.message : "Échec de la création du site",
       },
       { status: 500 }
     );

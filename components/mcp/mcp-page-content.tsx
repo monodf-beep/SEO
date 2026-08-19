@@ -31,31 +31,31 @@ const TOOLS = [
   {
     category: "Sites",
     items: [
-      { name: "list_sites", description: "List all monitored sites with basic info" },
-      { name: "get_site_overview", description: "Site KPIs, health score, latest crawl, and vitals" },
+      { name: "list_sites", description: "Lister tous les sites suivis avec leurs infos de base" },
+      { name: "get_site_overview", description: "KPI du site, score de santé, dernier crawl et vitals" },
     ],
   },
   {
-    category: "Keywords & Pages",
+    category: "Mots-clés & Pages",
     items: [
-      { name: "get_keywords", description: "Top keywords by clicks with position and CTR" },
-      { name: "get_pages", description: "Top pages by clicks with position and CTR" },
-      { name: "get_traffic", description: "Daily clicks and impressions over time" },
+      { name: "get_keywords", description: "Meilleurs mots-clés par clics, avec position et CTR" },
+      { name: "get_pages", description: "Meilleures pages par clics, avec position et CTR" },
+      { name: "get_traffic", description: "Clics et impressions quotidiens dans le temps" },
     ],
   },
   {
     category: "Crawl & Audit",
     items: [
-      { name: "run_crawl", description: "Start a background site crawl" },
-      { name: "get_crawl_status", description: "Check crawl progress and results" },
-      { name: "get_crawl_issues", description: "List issues found during a crawl" },
+      { name: "run_crawl", description: "Lancer un crawl du site en arrière-plan" },
+      { name: "get_crawl_status", description: "Vérifier l'avancement et les résultats d'un crawl" },
+      { name: "get_crawl_issues", description: "Lister les problèmes détectés par un crawl" },
     ],
   },
   {
     category: "Performance & SEO",
     items: [
-      { name: "get_vitals", description: "Core Web Vitals reports (LCP, CLS, INP, TTFB)" },
-      { name: "get_opportunities", description: "SEO opportunities: striking distance, low CTR, decay" },
+      { name: "get_vitals", description: "Rapports Core Web Vitals (LCP, CLS, INP, TTFB)" },
+      { name: "get_opportunities", description: "Opportunités SEO : striking distance, CTR faible, déclin" },
     ],
   },
 ];
@@ -65,41 +65,41 @@ const SETUP_GUIDES = [
     name: "Claude Code",
     icon: Terminal,
     steps: [
-      "Install tsx: npm install -D tsx",
-      "Add the config JSON to .claude/settings.json",
-      "Replace /path/to/crawlseo with your project path",
-      "Restart Claude Code — tools will be available immediately",
+      "Installer tsx : npm install -D tsx",
+      "Ajouter le JSON de config à .claude/settings.json",
+      "Remplacer /path/to/crawlseo par le chemin de votre projet",
+      "Redémarrer Claude Code — les outils sont disponibles immédiatement",
     ],
   },
   {
     name: "Claude Desktop",
     icon: Monitor,
     steps: [
-      "Open Claude Desktop settings",
-      "Navigate to Developer > MCP Servers",
-      "Add a new server with the config JSON below",
-      "Replace /path/to/crawlseo with your project path",
-      "Restart Claude Desktop",
+      "Ouvrir les paramètres de Claude Desktop",
+      "Aller dans Développeur > Serveurs MCP",
+      "Ajouter un nouveau serveur avec le JSON de config ci-dessous",
+      "Remplacer /path/to/crawlseo par le chemin de votre projet",
+      "Redémarrer Claude Desktop",
     ],
   },
   {
     name: "Cursor",
     icon: Code2,
     steps: [
-      "Open Cursor settings (Cmd/Ctrl + ,)",
-      "Search for 'MCP' in settings",
-      "Add the server config JSON",
-      "Replace /path/to/crawlseo with your project path",
-      "Restart Cursor",
+      "Ouvrir les paramètres de Cursor (Cmd/Ctrl + ,)",
+      "Chercher « MCP » dans les paramètres",
+      "Ajouter le JSON de config du serveur",
+      "Remplacer /path/to/crawlseo par le chemin de votre projet",
+      "Redémarrer Cursor",
     ],
   },
 ];
 
 const ROADMAP = [
-  { label: "OAuth2 remote transport", description: "Connect from hosted AI agents without local setup" },
-  { label: "Keyword research tools", description: "Research keywords and save results via MCP" },
-  { label: "Backlink analysis tools", description: "Query backlink data directly from AI agents" },
-  { label: "AI chat assistant", description: "Natural-language SEO Q&A over your site data" },
+  { label: "Transport distant OAuth2", description: "Connexion depuis des agents IA hébergés, sans installation locale" },
+  { label: "Outils de recherche de mots-clés", description: "Rechercher des mots-clés et enregistrer les résultats via MCP" },
+  { label: "Outils d'analyse de backlinks", description: "Interroger les backlinks directement depuis les agents IA" },
+  { label: "Assistant conversationnel", description: "Questions-réponses SEO en langage naturel sur vos données" },
 ];
 
 function CopyButton({ text }: { text: string }) {
@@ -120,12 +120,12 @@ function CopyButton({ text }: { text: string }) {
       {copied ? (
         <>
           <Check className="size-3 text-signal" />
-          Copied
+          Copié
         </>
       ) : (
         <>
           <Copy className="size-3" />
-          Copy
+          Copier
         </>
       )}
     </button>
@@ -138,10 +138,10 @@ export function McpPageContent() {
       {/* Connection config */}
       <div className="panel p-5">
         <h3 className="font-heading text-lg font-semibold text-foreground">
-          MCP Connection
+          Connexion MCP
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Add this configuration to your AI tool to connect to CrawlSEO&apos;s MCP server.
+          Ajoutez cette configuration à votre outil IA pour le connecter au serveur MCP de CrawlSEO.
         </p>
         <div className="mt-4 relative">
           <div className="absolute right-3 top-3">
@@ -156,7 +156,7 @@ export function McpPageContent() {
       {/* Setup guides */}
       <div className="panel p-5">
         <h3 className="font-heading text-lg font-semibold text-foreground">
-          Setup Guides
+          Guides d'installation
         </h3>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           {SETUP_GUIDES.map((guide) => {
@@ -191,10 +191,10 @@ export function McpPageContent() {
       {/* Available tools */}
       <div className="panel p-5">
         <h3 className="font-heading text-lg font-semibold text-foreground">
-          Available Tools
+          Outils disponibles
         </h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          10 tools available across 4 categories
+          10 outils répartis en 4 catégories
         </p>
         <div className="mt-4 space-y-4">
           {TOOLS.map((group) => (
@@ -226,7 +226,7 @@ export function McpPageContent() {
       <div className="panel p-5">
         <h3 className="flex items-center gap-2 font-heading text-lg font-semibold text-foreground">
           <Rocket className="size-5 text-primary" />
-          Roadmap
+          Feuille de route
         </h3>
         <div className="mt-4 space-y-3">
           {ROADMAP.map((item) => (

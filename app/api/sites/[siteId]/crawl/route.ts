@@ -9,7 +9,7 @@ export async function POST(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -19,7 +19,7 @@ export async function POST(
     });
 
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
 
     // Prevent concurrent crawls
@@ -65,7 +65,7 @@ export async function POST(
   } catch (error) {
     console.error("Crawl error:", error);
     return Response.json(
-      { error: error instanceof Error ? error.message : "Crawl failed" },
+      { error: error instanceof Error ? error.message : "Échec du crawl" },
       { status: 500 }
     );
   }
@@ -78,7 +78,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -87,7 +87,7 @@ export async function GET(
       select: { userId: true },
     });
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
 
     const crawls = await db.crawl.findMany({

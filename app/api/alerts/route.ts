@@ -6,7 +6,7 @@ export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const alerts = await db.alert.findMany({
@@ -26,7 +26,7 @@ export async function POST(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const body = (await req.json()) as {
@@ -40,7 +40,7 @@ export async function POST(req: Request) {
         select: { userId: true },
       });
       if (!site || site.userId !== session.user.id) {
-        return Response.json({ error: "Not found" }, { status: 404 });
+        return Response.json({ error: "Introuvable" }, { status: 404 });
       }
       await ensureDefaultAlerts(session.user.id, body.siteId);
       return Response.json({ ok: true });

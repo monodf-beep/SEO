@@ -47,7 +47,7 @@ export function SyncButton({
 
       if (!response.ok) {
         setError(true);
-        setMessage(data.error || "Sync failed");
+        setMessage(data.error || "Échec de la synchronisation");
         return;
       }
 
@@ -58,7 +58,7 @@ export function SyncButton({
       setTimeout(() => setMessage(null), 4000);
     } catch {
       setError(true);
-      setMessage("Sync failed");
+      setMessage("Échec de la synchronisation");
     } finally {
       setLoading(false);
     }
@@ -72,7 +72,7 @@ export function SyncButton({
         className={cn(fullWidth && "w-full", className)}
         size="sm"
       >
-        {loading ? "Syncing…" : "Sync GSC"}
+        {loading ? "Syncing…" : "Synchroniser GSC"}
       </Button>
       {reauthRequired && (
         <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3">
@@ -84,7 +84,7 @@ export function SyncButton({
                 onClick={() => signIn("google")}
                 className="font-medium text-primary underline underline-offset-2"
               >
-                Reconnect &rarr;
+                Reconnecter &rarr;
               </button>
             </p>
           </div>

@@ -66,7 +66,7 @@ export function BacklinksClient({
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
           <div className="text-sm">
             <p className="font-medium text-foreground">
-              Limited backlink data
+              Données de backlinks limitées
             </p>
             <p className="mt-0.5 text-muted-foreground">
               Add a DataForSEO API key in{" "}
@@ -74,7 +74,7 @@ export function BacklinksClient({
                 href={`/sites/${siteId}/settings`}
                 className="text-primary underline underline-offset-2"
               >
-                Settings
+                Paramètres
               </Link>{" "}
               for full backlink analysis with referring domains and anchor text.
             </p>
@@ -106,7 +106,7 @@ export function BacklinksClient({
             value={overview.totalBacklinks.toLocaleString()}
           />
           <StatCard
-            label="Referring Domains"
+            label="Domaine référents"
             value={overview.referringDomains.toLocaleString()}
           />
           <StatCard
@@ -128,13 +128,13 @@ export function BacklinksClient({
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="px-4 py-3 font-medium text-muted-foreground">
-                    Referring Domain
+                    Domaine référent
                   </th>
                   <th className="px-4 py-3 font-medium text-muted-foreground">
-                    Target URL
+                    URL cible
                   </th>
                   <th className="px-4 py-3 font-medium text-muted-foreground">
-                    Anchor Text
+                    Texte d'ancre
                   </th>
                   <th className="px-4 py-3 text-right font-medium text-muted-foreground">
                     Type
@@ -192,11 +192,11 @@ export function BacklinksClient({
       {loaded && backlinks.length === 0 && (
         <div className="panel flex flex-col items-center py-12 text-center">
           <LinkIcon className="size-10 text-muted-foreground/30" />
-          <p className="mt-3 font-medium text-foreground">No backlinks found</p>
+          <p className="mt-3 font-medium text-foreground">Aucun backlink trouvé</p>
           <p className="mt-1 text-sm text-muted-foreground">
             {source === "none"
               ? "Run a site crawl first to discover external links, or add a DataForSEO API key for full backlink data"
-              : "No backlink data available"}
+              : "Aucune donnée de backlink disponible"}
           </p>
         </div>
       )}

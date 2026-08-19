@@ -73,8 +73,8 @@ export default async function CrawlPage({ params }: Props) {
     <div>
       <PageHeader
         eyebrow={site.domain}
-        title="Site crawl"
-        description="Technical SEO audit · meta, headings, schema, sitemap, orphans, content score"
+        title="Crawl du site"
+        description="Audit SEO technique · meta, titres, schema, sitemap, pages orphelines, score de contenu"
         actions={<CrawlButton siteId={siteId} />}
       />
 
@@ -89,37 +89,37 @@ export default async function CrawlPage({ params }: Props) {
       {!latest ? (
         <EmptyState
           icon="◎"
-          title="No crawl yet"
-          description="Run a crawl to check titles, H1s, canonicals, broken pages, sitemap coverage, and on-page content scores."
+          title="Aucun crawl pour l'instant"
+          description="Lancez un crawl pour vérifier les titles, H1, canonicals, pages cassées, couverture du sitemap et scores de contenu."
         />
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-2 gap-4 lg:grid-cols-5">
             <ScoreCard
-              label="Health"
+              label="Santé"
               value={`${latest.healthScore ?? "—"}`}
               hint="/100"
               tone={(latest.healthScore ?? 0) >= 80 ? "good" : (latest.healthScore ?? 0) >= 60 ? "mid" : "bad"}
             />
-            <ScoreCard label="Pages" value={String(latest.pagesFound)} hint="crawled" />
-            <ScoreCard label="Issues" value={String(realIssues.length)} hint={`${bySeverity.CRITICAL} critical`} />
+            <ScoreCard label="Pages" value={String(latest.pagesFound)} hint="explorées" />
+            <ScoreCard label="Problèmes" value={String(realIssues.length)} hint={`${bySeverity.CRITICAL} critiques`} />
             <ScoreCard
-              label="Content avg"
+              label="Contenu moy."
               value={String(avgContentScore ?? "—")}
               hint="/100"
             />
             <ScoreCard
-              label="Orphans"
+              label="Orphelines"
               value={String(orphanCount)}
-              hint="no inlinks"
+              hint="aucun lien entrant"
             />
           </div>
 
-          {/* Crawled pages table (from AuditPage model) */}
+          {/* Pages explorées table (from AuditPage model) */}
           {auditPages.length > 0 && (
             <div className="panel overflow-hidden">
               <div className="border-b border-border/60 px-5 py-4">
-                <h3 className="font-heading text-lg font-semibold">Crawled pages</h3>
+                <h3 className="font-heading text-lg font-semibold">Pages explorées</h3>
                 <p className="text-sm text-muted-foreground">
                   {auditPages.length} pages stored with full metadata
                 </p>
@@ -134,7 +134,7 @@ export default async function CrawlPage({ params }: Props) {
                       <th className="px-4 py-3 text-right">Words</th>
                       <th className="px-4 py-3 text-right">H1s</th>
                       <th className="px-4 py-3 text-right">Images</th>
-                      <th className="px-4 py-3 text-right">Int. links</th>
+                      <th className="px-4 py-3 text-right">Liens int.</th>
                       <th className="px-4 py-3 text-right">Time</th>
                     </tr>
                   </thead>
@@ -199,7 +199,7 @@ export default async function CrawlPage({ params }: Props) {
               </p>
             </div>
             {realIssues.length === 0 ? (
-              <p className="px-5 py-8 text-sm text-muted-foreground">No issues found</p>
+              <p className="px-5 py-8 text-sm text-muted-foreground">Aucun problème détecté</p>
             ) : (
               <ul className="divide-y divide-border/40">
                 {realIssues.slice(0, 100).map((issue) => {

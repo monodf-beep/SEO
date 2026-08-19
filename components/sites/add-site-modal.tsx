@@ -25,7 +25,7 @@ interface GSCProperty {
 }
 
 export function AddSiteModal({
-  triggerLabel = "Add site",
+  triggerLabel = "Ajouter un site",
 }: {
   triggerLabel?: string;
 }) {
@@ -57,7 +57,7 @@ export function AddSiteModal({
       const response = await fetch("/api/gsc/properties");
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
-        throw new Error(body.error || "Failed to load GSC properties");
+        throw new Error(body.error || "Échec du chargement des propriétés Search Console");
       }
 
       const data = (await response.json()) as GSCProperty[];
@@ -65,12 +65,12 @@ export function AddSiteModal({
 
       if (!data?.length) {
         setError(
-          "No GSC properties found. Verify this Google account has Search Console access."
+          "Aucune propriété Search Console trouvée. Vérifiez que ce compte Google y a accès."
         );
       }
     } catch (err) {
       setError(
-        err instanceof Error ? err.message : "Failed to load GSC properties"
+        err instanceof Error ? err.message : "Échec du chargement des propriétés Search Console"
       );
     } finally {
       setLoading(false);
@@ -79,7 +79,7 @@ export function AddSiteModal({
 
   async function handleAddSite() {
     if (!selectedProperty) {
-      setError("Select a property first");
+      setError("Sélectionnez d'abord une propriété");
       return;
     }
 
@@ -116,7 +116,7 @@ export function AddSiteModal({
       const body = await response.json().catch(() => ({}));
 
       if (!response.ok) {
-        throw new Error(body.error || "Failed to add site");
+        throw new Error(body.error || "Échec de l'ajout du site");
       }
 
       setSuccess(true);
@@ -130,7 +130,7 @@ export function AddSiteModal({
         }
       }, 800);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add site");
+      setError(err instanceof Error ? err.message : "Échec de l'ajout du site");
     } finally {
       setAdding(false);
     }
@@ -142,9 +142,9 @@ export function AddSiteModal({
 
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>Connect Search Console</DialogTitle>
+          <DialogTitle>Connecter la Search Console</DialogTitle>
           <DialogDescription>
-            Pick a property you manage. We only request read-only GSC access.
+            Choisissez une propriété que vous gérez. L'accès demandé est en lecture seule.
           </DialogDescription>
         </DialogHeader>
 
@@ -157,13 +157,13 @@ export function AddSiteModal({
 
           {success && (
             <div className="rounded-lg border border-signal/30 bg-signal-muted px-3 py-2 text-sm text-signal">
-              Site connected. Opening workspace…
+              Site connecté. Ouverture de l'espace de travail…
             </div>
           )}
 
           {loading ? (
             <div className="py-8 text-center text-sm text-muted-foreground">
-              Loading properties from Google…
+              Chargement des propriétés depuis Google…
             </div>
           ) : properties.length > 0 ? (
             <Select
@@ -171,7 +171,7 @@ export function AddSiteModal({
               onValueChange={(value) => value !== null && setSelectedProperty(value)}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select a GSC property…" />
+                <SelectValue placeholder="Sélectionnez une propriété GSC…" />
               </SelectTrigger>
               <SelectContent>
                 {properties.map((prop) => (
@@ -190,14 +190,14 @@ export function AddSiteModal({
               onClick={() => setOpen(false)}
               disabled={adding}
             >
-              Cancel
+              Annuler
             </Button>
             <Button
               type="button"
               onClick={handleAddSite}
               disabled={!selectedProperty || loading || adding}
             >
-              {adding ? "Connecting…" : "Connect site"}
+              {adding ? "Connexion…" : "Connecter le site"}
             </Button>
           </div>
         </div>

@@ -37,7 +37,7 @@ export async function evaluateAlertsForUser(userId: string): Promise<AlertFire[]
             type: alert.type,
             siteId: alert.siteId,
             domain: alert.site.domain,
-            message: `Traffic drop on ${alert.site.domain}: clicks ${deltas.clicks.toFixed(1)}% vs prior week`,
+            message: `Chute de trafic sur ${alert.site.domain} : clics ${deltas.clicks.toFixed(1)} % vs semaine précédente`,
           });
         }
       }
@@ -52,7 +52,7 @@ export async function evaluateAlertsForUser(userId: string): Promise<AlertFire[]
             type: alert.type,
             siteId: alert.siteId,
             domain: alert.site.domain,
-            message: `Avg position worsened by ${Math.abs(deltas.avgPosition).toFixed(1)} on ${alert.site.domain}`,
+            message: `Position moyenne dégradée de ${Math.abs(deltas.avgPosition).toFixed(1)} sur ${alert.site.domain}`,
           });
         }
       }
@@ -68,7 +68,7 @@ export async function evaluateAlertsForUser(userId: string): Promise<AlertFire[]
             type: alert.type,
             siteId: alert.siteId,
             domain: alert.site.domain,
-            message: `Crawl health ${latest.healthScore}/100 on ${alert.site.domain} (${latest.issuesFound} issues)`,
+            message: `Santé du crawl ${latest.healthScore}/100 sur ${alert.site.domain} (${latest.issuesFound} problèmes)`,
           });
         }
       }
@@ -88,7 +88,7 @@ export async function evaluateAlertsForUser(userId: string): Promise<AlertFire[]
             type: alert.type,
             siteId: alert.siteId,
             domain: alert.site.domain,
-            message: `Core Web Vitals degraded on ${alert.site.domain} (${bad.length} recent poor reports)`,
+            message: `Core Web Vitals dégradés sur ${alert.site.domain} (${bad.length} rapports récents médiocres)`,
           });
         }
       }

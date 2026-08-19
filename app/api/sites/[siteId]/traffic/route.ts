@@ -9,7 +9,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -19,7 +19,7 @@ export async function GET(
     });
 
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
 
     const url = new URL(_req.url);
@@ -32,6 +32,6 @@ export async function GET(
     return Response.json(data);
   } catch (error) {
     console.error("Error fetching traffic:", error);
-    return Response.json({ error: "Failed to load traffic" }, { status: 500 });
+    return Response.json({ error: "Échec du chargement du trafic" }, { status: 500 });
   }
 }

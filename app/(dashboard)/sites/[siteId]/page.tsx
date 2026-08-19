@@ -60,7 +60,7 @@ export default async function SiteOverviewPage({ params }: SitePageProps) {
       <PageHeader
         eyebrow="Site"
         title={site.domain}
-        description={site.gscProperty || "Search Console property"}
+        description={site.gscProperty || "Propriété Search Console"}
         actions={
           <div className="flex flex-wrap items-start gap-2">
             <DataLagBadge />
@@ -73,14 +73,14 @@ export default async function SiteOverviewPage({ params }: SitePageProps) {
 
       <div className="mb-6 flex flex-wrap gap-2">
         {[
-          ["Opportunities", "opportunities"],
-          ["Keywords", "keywords"],
-          ["Saved Keywords", "saved-keywords"],
+          ["Opportunités", "opportunities"],
+          ["Mots-clés", "keywords"],
+          ["Mots-clés suivis", "saved-keywords"],
           ["Pages", "pages"],
           ["Crawl", "crawl"],
           ["Vitals", "vitals"],
-          ["Alerts", "alerts"],
-          ["Settings", "settings"],
+          ["Alertes", "alerts"],
+          ["Paramètres", "settings"],
         ].map(([label, path]) => (
           <Link
             key={path}
@@ -95,15 +95,15 @@ export default async function SiteOverviewPage({ params }: SitePageProps) {
       {site._count.keywords === 0 ? (
         <EmptyState
           icon="↻"
-          title="Waiting for GSC data"
-          description="Run a sync to pull keywords, pages, and traffic for the last 28 days."
+          title="En attente des données Search Console"
+          description="Lancez une synchronisation pour récupérer mots-clés, pages et trafic des 28 derniers jours."
         />
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="panel p-4">
               <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                Crawl health
+                Santé du crawl
               </p>
               <p className="mt-1 font-heading text-2xl font-semibold text-foreground">
                 {latestCrawl?.healthScore != null ? `${latestCrawl.healthScore}/100` : "—"}
@@ -111,7 +111,7 @@ export default async function SiteOverviewPage({ params }: SitePageProps) {
               <p className="text-xs text-muted-foreground">
                 {latestCrawl
                   ? `${latestCrawl.pagesFound} pages · ${latestCrawl.issuesFound} issues`
-                  : "Run a crawl"}
+                  : "Lancer un crawl"}
               </p>
             </div>
             <div className="panel p-4">
@@ -121,11 +121,11 @@ export default async function SiteOverviewPage({ params }: SitePageProps) {
               <p className="mt-1 font-heading text-2xl font-semibold text-signal">
                 {opportunities?.feed.length ?? 0}
               </p>
-              <p className="text-xs text-muted-foreground">action items this period</p>
+              <p className="text-xs text-muted-foreground">actions à mener sur la période</p>
             </div>
             <div className="panel p-4">
               <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">
-                Latest perf score
+                Dernier score de perf.
               </p>
               <p className="mt-1 font-heading text-2xl font-semibold text-foreground">
                 {latestVital?.perfScore ?? "—"}

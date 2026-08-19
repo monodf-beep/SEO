@@ -27,8 +27,8 @@ export default async function KeywordResearchPage({ params }: Props) {
     <div>
       <PageHeader
         eyebrow={site.domain}
-        title="Keyword Research"
-        description="Discover keyword ideas with search volume, difficulty, and CPC data"
+        title="Recherche de mots-clés"
+        description="Découvrez des idées de mots-clés avec volume de recherche, difficulté et CPC"
       />
       <KeywordResearchClient siteId={siteId} hasDataForSEO={hasDataForSEO} />
     </div>

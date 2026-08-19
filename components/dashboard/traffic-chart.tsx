@@ -40,12 +40,12 @@ export function TrafficChart({ siteId, days = 90 }: TrafficChartProps) {
       setError(null);
       try {
         const res = await fetch(`/api/sites/${siteId}/traffic?days=${days}`);
-        if (!res.ok) throw new Error("Failed to load traffic");
+        if (!res.ok) throw new Error("Échec du chargement du trafic");
         const json = (await res.json()) as ChartData[];
         if (!cancelled) setData(json);
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load chart");
+          setError(err instanceof Error ? err.message : "Échec du chargement du graphique");
         }
       } finally {
         if (!cancelled) setLoading(false);
@@ -61,7 +61,7 @@ export function TrafficChart({ siteId, days = 90 }: TrafficChartProps) {
   if (loading) {
     return (
       <div className="panel flex h-80 items-center justify-center">
-        <p className="text-atom-body text-muted-foreground">Loading traffic…</p>
+        <p className="text-atom-body text-muted-foreground">Chargement du trafic…</p>
       </div>
     );
   }
@@ -78,7 +78,7 @@ export function TrafficChart({ siteId, days = 90 }: TrafficChartProps) {
     return (
       <div className="panel flex h-80 flex-col items-center justify-center gap-2">
         <p className="font-heading text-atom-subheader font-medium text-foreground">
-          No traffic yet
+          Pas encore de trafic
         </p>
         <p className="text-atom-body text-muted-foreground">
           Sync GSC data to populate the last {days} days.
@@ -97,7 +97,7 @@ export function TrafficChart({ siteId, days = 90 }: TrafficChartProps) {
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <h3 className="font-heading text-atom-subheader font-semibold text-foreground">
-            Search traffic
+            Trafic de recherche
           </h3>
           <p className="text-atom-caption text-muted-foreground">
             Daily clicks & impressions · last {days} days
@@ -105,7 +105,7 @@ export function TrafficChart({ siteId, days = 90 }: TrafficChartProps) {
         </div>
         <div className="flex gap-4 text-atom-caption">
           <span className="inline-flex items-center gap-2 text-muted-foreground">
-            <span className="size-2 rounded-full" style={{ background: info }} /> Clicks
+            <span className="size-2 rounded-full" style={{ background: info }} /> Clics
           </span>
           <span className="inline-flex items-center gap-2 text-muted-foreground">
             <span className="size-2 rounded-full" style={{ background: success }} /> Impressions
@@ -161,7 +161,7 @@ export function TrafficChart({ siteId, days = 90 }: TrafficChartProps) {
             labelFormatter={(label) => formatAxisDate(String(label))}
             formatter={(value, name) => [
               typeof value === "number" ? value.toLocaleString() : value,
-              name === "clicks" ? "Clicks" : "Impressions",
+              name === "clicks" ? "Clics" : "Impressions",
             ]}
           />
           <Area

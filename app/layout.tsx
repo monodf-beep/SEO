@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: "%s · CrawlSEO",
   },
   description:
-    "Self-hosted SEO monitoring — GSC, crawl health, Core Web Vitals",
+    "Suivi SEO auto-hébergé — Search Console, santé du crawl, Core Web Vitals",
   icons: {
     icon: [
       {
@@ -46,7 +46,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="fr"
       className={`${inter.variable} ${interHeading.variable} ${plexMono.variable} dark h-full`}
       suppressHydrationWarning
     >

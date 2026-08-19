@@ -31,15 +31,15 @@ export default async function VitalsPage({ params }: Props) {
       <PageHeader
         eyebrow={site.domain}
         title="Core Web Vitals"
-        description="PageSpeed Insights lab data for your top pages · set GOOGLE_PAGESPEED_KEY for higher quota"
+        description="Données de laboratoire PageSpeed Insights pour vos pages principales · définissez GOOGLE_PAGESPEED_KEY pour un quota plus élevé"
         actions={<VitalsButton siteId={siteId} />}
       />
 
       {reports.length === 0 ? (
         <EmptyState
           icon="⚡"
-          title="No vitals yet"
-          description="Run a check on your top landing pages (mobile Lighthouse)."
+          title="Aucune mesure pour l'instant"
+          description="Lancez une mesure sur vos pages principales (Lighthouse mobile)."
         />
       ) : (
         <div className="panel overflow-x-auto">
@@ -95,9 +95,9 @@ export default async function VitalsPage({ params }: Props) {
       )}
 
       <div className="panel mt-6 p-5">
-        <h3 className="font-heading text-lg font-semibold">Index coverage</h3>
+        <h3 className="font-heading text-lg font-semibold">Couverture d'indexation</h3>
         <p className="mb-4 text-sm text-muted-foreground">
-          Live URL Inspection for top pages (uses your GSC OAuth token)
+          Inspection d'URL en direct pour les pages principales (utilise votre jeton OAuth GSC)
         </p>
         <IndexCheckButton siteId={siteId} />
       </div>

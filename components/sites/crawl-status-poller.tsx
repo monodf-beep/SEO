@@ -52,7 +52,7 @@ export function CrawlStatusPoller({ siteId, crawlId }: CrawlStatusPollerProps) {
       <Loader2 className="size-5 animate-spin text-primary" />
       <div>
         <p className="text-sm font-medium text-foreground">
-          Crawl in progress...
+          Crawl en cours…
         </p>
         <p className="text-xs text-muted-foreground">
           {status?.pagesFound ?? 0} pages found · {status?.issuesFound ?? 0} issues

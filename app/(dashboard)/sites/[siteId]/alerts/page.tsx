@@ -30,8 +30,8 @@ export default async function AlertsPage({ params }: Props) {
     <div>
       <PageHeader
         eyebrow={site.domain}
-        title="Alerts"
-        description="Rules for traffic drops, position changes, crawl health, and vitals"
+        title="Alertes"
+        description="Règles sur les chutes de trafic, variations de position, santé du crawl et vitals"
         actions={<EvaluateAlertsButton />}
       />
 
@@ -46,10 +46,10 @@ export default async function AlertsPage({ params }: Props) {
                 {a.type.replaceAll("_", " ")}
               </p>
               <p className="text-xs text-muted-foreground">
-                Channel: {a.channel}
+                Canal : {a.channel}
                 {a.lastFired
-                  ? ` · last fired ${new Date(a.lastFired).toLocaleString()}`
-                  : " · never fired"}
+                  ? ` · dernier déclenchement ${new Date(a.lastFired).toLocaleString("fr-FR")}`
+                  : " · jamais déclenchée"}
               </p>
               <p className="mt-1 font-data text-[11px] text-muted-foreground">
                 {JSON.stringify(a.config)}
@@ -62,7 +62,7 @@ export default async function AlertsPage({ params }: Props) {
                   : "rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground"
               }
             >
-              {a.enabled ? "Enabled" : "Off"}
+              {a.enabled ? "Active" : "Inactive"}
             </span>
           </div>
         ))}

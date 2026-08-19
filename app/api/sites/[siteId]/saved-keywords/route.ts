@@ -8,7 +8,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -17,7 +17,7 @@ export async function GET(
       select: { userId: true },
     });
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
 
     const savedKeywords = await db.savedKeyword.findMany({
@@ -55,7 +55,7 @@ export async function GET(
   } catch (error) {
     console.error("Saved keywords GET error:", error);
     return Response.json(
-      { error: "Failed to load saved keywords" },
+      { error: "Échec du chargement des mots-clés suivis" },
       { status: 500 }
     );
   }
@@ -68,7 +68,7 @@ export async function POST(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -77,13 +77,13 @@ export async function POST(
       select: { userId: true },
     });
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
 
     const body = (await req.json()) as { query?: string; notes?: string };
     if (!body.query || typeof body.query !== "string") {
       return Response.json(
-        { error: "Missing required field: query" },
+        { error: "Champ obligatoire manquant : query" },
         { status: 400 }
       );
     }
@@ -109,7 +109,7 @@ export async function POST(
   } catch (error) {
     console.error("Saved keywords POST error:", error);
     return Response.json(
-      { error: "Failed to save keyword" },
+      { error: "Échec de l'enregistrement du mot-clé" },
       { status: 500 }
     );
   }
@@ -122,7 +122,7 @@ export async function DELETE(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -131,13 +131,13 @@ export async function DELETE(
       select: { userId: true },
     });
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
 
     const body = (await req.json()) as { query?: string };
     if (!body.query || typeof body.query !== "string") {
       return Response.json(
-        { error: "Missing required field: query" },
+        { error: "Champ obligatoire manquant : query" },
         { status: 400 }
       );
     }
@@ -155,7 +155,7 @@ export async function DELETE(
   } catch (error) {
     console.error("Saved keywords DELETE error:", error);
     return Response.json(
-      { error: "Failed to delete saved keyword" },
+      { error: "Échec de la suppression du mot-clé suivi" },
       { status: 500 }
     );
   }

@@ -57,16 +57,16 @@ export default async function SavedKeywordsPage({ params }: Props) {
     <div>
       <PageHeader
         eyebrow={site.domain}
-        title="Saved Keywords"
-        description="Track specific keywords over time"
+        title="Mots-clés suivis"
+        description="Suivez des mots-clés précis dans le temps"
         actions={<SaveKeywordForm siteId={siteId} />}
       />
 
       {saved.length === 0 ? (
         <EmptyState
           icon="⭐"
-          title="No saved keywords"
-          description="Save keywords you want to track closely. Use the form above to add your first keyword."
+          title="Aucun mot-clé suivi"
+          description="Enregistrez les mots-clés à suivre de près. Utilisez le formulaire ci-dessus pour ajouter le premier."
         />
       ) : (
         <div className="panel overflow-hidden">
@@ -75,7 +75,7 @@ export default async function SavedKeywordsPage({ params }: Props) {
               <thead>
                 <tr className="border-b border-border/70 bg-muted/30">
                   <th className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                    Keyword
+                    Mot-clé
                   </th>
                   <th className="px-4 py-3 text-left text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                     Notes
@@ -84,7 +84,7 @@ export default async function SavedKeywordsPage({ params }: Props) {
                     Position
                   </th>
                   <th className="px-4 py-3 text-right text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
-                    Clicks
+                    Clics
                   </th>
                   <th className="px-4 py-3 text-right text-[11px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
                     Impr.

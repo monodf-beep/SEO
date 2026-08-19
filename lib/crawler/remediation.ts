@@ -1,82 +1,82 @@
 export const REMEDIATION: Record<string, { title: string; howToFix: string }> = {
   BROKEN_LINK: {
-    title: "Broken Link",
+    title: "Lien cassé",
     howToFix:
-      "Update or remove the broken link. If the target page was moved, replace the URL with the new destination. Set up 301 redirects for any pages you have retired.",
+      "Mettez à jour ou supprimez le lien cassé. Si la page cible a été déplacée, remplacez l'URL par la nouvelle destination. Mettez en place des redirections 301 pour les pages retirées.",
   },
   REDIRECT: {
-    title: "Redirect Detected",
+    title: "Redirection détectée",
     howToFix:
-      "Update internal links to point directly to the final destination URL instead of the redirecting URL. Eliminate redirect chains by ensuring each redirect resolves in a single hop.",
+      "Faites pointer les liens internes directement vers l'URL de destination finale plutôt que vers l'URL qui redirige. Éliminez les chaînes de redirections : chaque redirection doit se résoudre en un seul saut.",
   },
   MISSING_TITLE: {
-    title: "Missing Title Tag",
+    title: "Balise title manquante",
     howToFix:
-      "Add a unique <title> tag between 15 and 65 characters that accurately describes the page content and includes the primary target keyword.",
+      "Ajoutez une balise <title> unique de 15 à 65 caractères qui décrit fidèlement le contenu de la page et contient le mot-clé principal visé.",
   },
   MISSING_DESCRIPTION: {
-    title: "Missing Meta Description",
+    title: "Meta description manquante",
     howToFix:
-      "Add a <meta name=\"description\"> tag between 50 and 160 characters that summarizes the page and entices users to click from search results.",
+      "Ajoutez une balise <meta name=\"description\"> de 50 à 160 caractères qui résume la page et incite au clic depuis les résultats de recherche.",
   },
   DUPLICATE_TITLE: {
-    title: "Duplicate Title Tag",
+    title: "Balise title dupliquée",
     howToFix:
-      "Write a unique title for each page. If pages have similar content, consider consolidating them with a canonical tag or merging the content into a single authoritative page.",
+      "Rédigez un titre unique pour chaque page. Si des pages ont un contenu proche, envisagez de les consolider avec une balise canonical ou de fusionner le contenu en une seule page de référence.",
   },
   DUPLICATE_DESCRIPTION: {
-    title: "Duplicate Meta Description",
+    title: "Meta description dupliquée",
     howToFix:
-      "Write a unique meta description for each page. Avoid using templates that produce identical descriptions across multiple pages.",
+      "Rédigez une meta description unique pour chaque page. Évitez les gabarits qui produisent des descriptions identiques sur plusieurs pages.",
   },
   MISSING_H1: {
-    title: "Missing H1 Heading",
+    title: "Titre H1 manquant",
     howToFix:
-      "Add a single H1 heading that clearly describes the main topic of the page. Place it above the primary content and include relevant keywords naturally.",
+      "Ajoutez un unique titre H1 qui décrit clairement le sujet principal de la page. Placez-le au-dessus du contenu principal et intégrez-y naturellement les mots-clés pertinents.",
   },
   MULTIPLE_H1: {
-    title: "Multiple H1 Headings",
+    title: "Plusieurs titres H1",
     howToFix:
-      "Reduce the page to a single H1 heading. Convert additional H1 tags to H2 or H3 to establish a clear heading hierarchy.",
+      "Ramenez la page à un seul titre H1. Convertissez les H1 supplémentaires en H2 ou H3 pour établir une hiérarchie de titres claire.",
   },
   MISSING_ALT: {
-    title: "Images Missing Alt Text",
+    title: "Images sans texte alternatif",
     howToFix:
-      "Add descriptive alt attributes to all <img> tags. Use concise text that describes the image content. For decorative images, use an empty alt=\"\" attribute.",
+      "Ajoutez un attribut alt descriptif à toutes les balises <img>. Utilisez un texte concis qui décrit le contenu de l'image. Pour les images décoratives, utilisez un attribut alt=\"\" vide.",
   },
   MISSING_CANONICAL: {
-    title: "Missing Canonical Tag",
+    title: "Balise canonical manquante",
     howToFix:
-      "Add a <link rel=\"canonical\" href=\"...\"> tag in the <head> pointing to the preferred URL for this page. This prevents duplicate content issues from URL variations.",
+      "Ajoutez une balise <link rel=\"canonical\" href=\"...\"> dans le <head> pointant vers l'URL de référence de la page. Cela évite les problèmes de contenu dupliqué liés aux variantes d'URL.",
   },
   MISSING_ROBOTS: {
-    title: "Missing robots.txt",
+    title: "robots.txt manquant",
     howToFix:
-      "Create a robots.txt file at the site root. At minimum, specify the User-agent and Sitemap directives. Use Disallow rules to block crawlers from admin or duplicate pages.",
+      "Créez un fichier robots.txt à la racine du site. Indiquez au minimum les directives User-agent et Sitemap. Utilisez des règles Disallow pour bloquer l'exploration des pages d'administration ou dupliquées.",
   },
   MISSING_SITEMAP: {
-    title: "Missing or Incomplete Sitemap",
+    title: "Sitemap manquant ou incomplet",
     howToFix:
-      "Create an XML sitemap listing all indexable pages and submit it to Google Search Console. Ensure every crawlable page is included in the sitemap.",
+      "Créez un sitemap XML listant toutes les pages indexables et soumettez-le à la Google Search Console. Vérifiez que chaque page explorable figure dans le sitemap.",
   },
   MISSING_SCHEMA: {
-    title: "No Structured Data",
+    title: "Aucune donnée structurée",
     howToFix:
-      "Add JSON-LD structured data relevant to the page type (Article, Product, FAQPage, etc.). Validate with Google's Rich Results Test before deploying.",
+      "Ajoutez des données structurées JSON-LD adaptées au type de page (Article, Product, FAQPage, etc.). Validez-les avec le test des résultats enrichis de Google avant la mise en ligne.",
   },
   SLOW_PAGE: {
-    title: "Slow Page Response",
+    title: "Réponse de page lente",
     howToFix:
-      "Reduce server response time by enabling caching, optimizing database queries, and using a CDN. Aim for a server response time under 200ms and total load under 3 seconds.",
+      "Réduisez le temps de réponse du serveur en activant la mise en cache, en optimisant les requêtes en base et en utilisant un CDN. Visez un temps de réponse serveur sous 200 ms et un chargement total sous 3 secondes.",
   },
   MIXED_CONTENT: {
-    title: "Mixed Content (HTTP on HTTPS)",
+    title: "Contenu mixte (HTTP sur HTTPS)",
     howToFix:
-      "Update all resource URLs (images, scripts, stylesheets) to use HTTPS. Use protocol-relative URLs or enforce HTTPS via Content-Security-Policy headers.",
+      "Passez toutes les URL de ressources (images, scripts, feuilles de style) en HTTPS. Utilisez des URL relatives au protocole ou imposez le HTTPS via des en-têtes Content-Security-Policy.",
   },
   LARGE_PAGE: {
-    title: "Large HTML Payload",
+    title: "Page HTML trop lourde",
     howToFix:
-      "Reduce the HTML payload by removing inline CSS/JS, deferring non-critical resources, lazy-loading images, and minifying the HTML output. Aim for under 3 MB per page.",
+      "Allégez la page en retirant les CSS/JS inline, en différant les ressources non critiques, en chargeant les images en lazy-loading et en minifiant le HTML. Visez moins de 3 Mo par page.",
   },
 };

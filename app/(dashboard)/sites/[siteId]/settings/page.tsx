@@ -53,15 +53,15 @@ export default async function SettingsPage({ params }: Props) {
     <div>
       <PageHeader
         eyebrow={site.domain}
-        title="Settings"
-        description="Site configuration and data management"
+        title="Paramètres"
+        description="Configuration du site et gestion des données"
       />
 
       <div className="space-y-6">
         {/* Site info */}
         <div className="panel p-5">
           <h3 className="font-heading text-lg font-semibold text-foreground">
-            Site details
+            Détails du site
           </h3>
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between">
@@ -69,9 +69,9 @@ export default async function SettingsPage({ params }: Props) {
               <dd className="font-medium text-foreground">{site.domain}</dd>
             </div>
             <div className="flex justify-between">
-              <dt className="text-muted-foreground">GSC Property</dt>
+              <dt className="text-muted-foreground">Propriété GSC</dt>
               <dd className="font-medium text-foreground">
-                {site.gscProperty || "Not connected"}
+                {site.gscProperty || "Non connectée"}
               </dd>
             </div>
             <div className="flex justify-between">
@@ -93,26 +93,26 @@ export default async function SettingsPage({ params }: Props) {
         {/* Data summary */}
         <div className="panel p-5">
           <h3 className="font-heading text-lg font-semibold text-foreground">
-            Stored data
+            Données stockées
           </h3>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            <DataStat label="Keyword records" value={site._count.keywords} />
-            <DataStat label="Page records" value={site._count.pages} />
+            <DataStat label="Lignes de mots-clés" value={site._count.keywords} />
+            <DataStat label="Lignes de pages" value={site._count.pages} />
             <DataStat label="Crawls" value={site._count.crawls} />
             <DataStat label="Vitals reports" value={site._count.vitals} />
             <DataStat label="Alert rules" value={site._count.alerts} />
-            <DataStat label="Saved keywords" value={site._count.savedKeywords} />
+            <DataStat label="Mots-clés suivis" value={site._count.savedKeywords} />
           </div>
         </div>
 
-        {/* Danger zone */}
+        {/* Zone dangereuse */}
         <div className="panel border-danger/30 p-5">
           <h3 className="font-heading text-lg font-semibold text-danger">
-            Danger zone
+            Zone dangereuse
           </h3>
           <p className="mt-2 text-sm text-muted-foreground">
-            Permanently delete this site and all associated data. This action
-            cannot be undone.
+            Supprime définitivement ce site et toutes ses données. Cette action
+            est irréversible.
           </p>
           <div className="mt-4">
             <DeleteSiteButton siteId={siteId} domain={site.domain} />

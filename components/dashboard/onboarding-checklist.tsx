@@ -46,39 +46,39 @@ export function OnboardingChecklist({
   const steps: Step[] = [
     {
       id: "add-site",
-      label: "Add a site",
-      description: "Connect a Google Search Console property to monitor",
+      label: "Ajouter un site",
+      description: "Connecter une propriété Google Search Console à suivre",
       icon: <Globe className="size-4" />,
       done: hasSites,
       href: "/sites",
-      actionLabel: "Add site",
+      actionLabel: "Ajouter",
     },
     {
       id: "connect-gsc",
-      label: "Connect GSC",
-      description: "Link your Google Search Console for keyword and page data",
+      label: "Connecter la Search Console",
+      description: "Relier la Search Console pour les données de mots-clés et de pages",
       icon: <Link2 className="size-4" />,
       done: hasGscConnected,
       href: firstSiteId ? `/sites/${firstSiteId}` : "/sites",
-      actionLabel: "Connect",
+      actionLabel: "Connecter",
     },
     {
       id: "first-sync",
-      label: "Sync GSC data",
-      description: "Pull the last 28 days of search performance data",
+      label: "Synchroniser les données",
+      description: "Rapatrier les 28 derniers jours de performances de recherche",
       icon: <RefreshCw className="size-4" />,
       done: hasSyncedData,
       href: firstSiteId ? `/sites/${firstSiteId}` : "/sites",
-      actionLabel: "Sync now",
+      actionLabel: "Synchroniser",
     },
     {
       id: "first-crawl",
-      label: "Run first crawl",
-      description: "Audit your site for technical SEO issues",
+      label: "Lancer le premier crawl",
+      description: "Auditer le site à la recherche de problèmes SEO techniques",
       icon: <Bug className="size-4" />,
       done: hasCrawled,
       href: firstSiteId ? `/sites/${firstSiteId}/crawl` : "/sites",
-      actionLabel: "Start crawl",
+      actionLabel: "Lancer le crawl",
     },
   ];
 
@@ -91,17 +91,17 @@ export function OnboardingChecklist({
       <div className="flex items-start justify-between px-5 pt-5">
         <div>
           <h3 className="font-heading text-lg font-semibold text-foreground">
-            Get started
+            Bien démarrer
           </h3>
           <p className="mt-1 text-sm text-muted-foreground">
-            {completedCount}/{steps.length} steps completed
+            {completedCount}/{steps.length} étapes terminées
           </p>
         </div>
         <button
           type="button"
           onClick={() => setDismissed(true)}
           className="rounded-full p-1 text-muted-foreground transition hover:bg-muted hover:text-foreground"
-          title="Dismiss"
+          title="Masquer"
         >
           <X className="size-4" />
         </button>

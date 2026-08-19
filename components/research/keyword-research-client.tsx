@@ -87,7 +87,7 @@ export function KeywordResearchClient({
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
           <div className="text-sm">
             <p className="font-medium text-foreground">
-              Limited data — Google Autocomplete only
+              Données limitées — Google Autocomplete uniquement
             </p>
             <p className="mt-0.5 text-muted-foreground">
               Add a DataForSEO API key in{" "}
@@ -95,7 +95,7 @@ export function KeywordResearchClient({
                 href={`/sites/${siteId}/settings`}
                 className="text-primary underline underline-offset-2"
               >
-                Settings
+                Paramètres
               </Link>{" "}
               for search volume, difficulty, and CPC data.
             </p>
@@ -111,7 +111,7 @@ export function KeywordResearchClient({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Enter a seed keyword..."
+            placeholder="Saisissez un mot-clé de départ…"
             className="w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -134,8 +134,8 @@ export function KeywordResearchClient({
         <div className="panel overflow-hidden">
           {source === "autocomplete" && (
             <div className="border-b border-border bg-muted/30 px-4 py-2 text-xs text-muted-foreground">
-              Showing Google Autocomplete suggestions — volume and difficulty data
-              requires DataForSEO
+              Suggestions Google Autocomplete — les volumes et la difficulté
+              nécessitent DataForSEO
             </div>
           )}
           <div className="overflow-x-auto">
@@ -143,7 +143,7 @@ export function KeywordResearchClient({
               <thead>
                 <tr className="border-b border-border text-left">
                   <th className="px-4 py-3 font-medium text-muted-foreground">
-                    Keyword
+                    Mot-clé
                   </th>
                   {source === "dataforseo" && (
                     <>
@@ -201,14 +201,14 @@ export function KeywordResearchClient({
                           {isSaved ? (
                             <>
                               <Check className="size-3 text-signal" />
-                              Saved
+                              Suivi
                             </>
                           ) : isSaving ? (
                             <Loader2 className="size-3 animate-spin" />
                           ) : (
                             <>
                               <Bookmark className="size-3" />
-                              Save
+                              Suivre
                             </>
                           )}
                         </button>
@@ -230,9 +230,9 @@ export function KeywordResearchClient({
       {!loading && results.length === 0 && source !== null && (
         <div className="panel flex flex-col items-center py-12 text-center">
           <Search className="size-10 text-muted-foreground/30" />
-          <p className="mt-3 font-medium text-foreground">No results found</p>
+          <p className="mt-3 font-medium text-foreground">Aucun résultat</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Try a different seed keyword
+            Essayez un autre mot-clé de départ
           </p>
         </div>
       )}

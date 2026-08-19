@@ -6,7 +6,7 @@ export async function GET() {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const properties = await listGSCProperties(session.user.id);
@@ -24,7 +24,7 @@ export async function GET() {
 
     return Response.json(
       {
-        error: error instanceof Error ? error.message : "Failed to list properties",
+        error: error instanceof Error ? error.message : "Échec de la récupération des propriétés",
       },
       { status: 500 }
     );

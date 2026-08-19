@@ -20,12 +20,12 @@ export function CrawlButton({ siteId }: { siteId: string }) {
     try {
       const res = await fetch(`/api/sites/${siteId}/crawl`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Crawl failed");
+      if (!res.ok) throw new Error(data.error || "Échec du crawl");
       setMsg(`Crawl started (ID: ${data.crawlId?.slice(0, 8)}...)`);
       router.refresh();
     } catch (e) {
       setErr(true);
-      setMsg(e instanceof Error ? e.message : "Crawl failed");
+      setMsg(e instanceof Error ? e.message : "Échec du crawl");
     } finally {
       setLoading(false);
     }
@@ -39,7 +39,7 @@ export function CrawlButton({ siteId }: { siteId: string }) {
         disabled={loading}
         onClick={run}
       >
-        {loading ? "Starting…" : "Run crawl"}
+        {loading ? "Démarrage…" : "Lancer un crawl"}
       </Button>
       {msg && (
         <p className={cn("text-atom-caption", err ? "text-danger" : "text-signal")}>
@@ -63,12 +63,12 @@ export function VitalsButton({ siteId }: { siteId: string }) {
     try {
       const res = await fetch(`/api/sites/${siteId}/vitals`, { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Vitals failed");
+      if (!res.ok) throw new Error(data.error || "Échec de la mesure des vitals");
       setMsg(`Saved ${data.inserted} PageSpeed reports`);
       router.refresh();
     } catch (e) {
       setErr(true);
-      setMsg(e instanceof Error ? e.message : "Failed");
+      setMsg(e instanceof Error ? e.message : "Échec");
     } finally {
       setLoading(false);
     }
@@ -82,7 +82,7 @@ export function VitalsButton({ siteId }: { siteId: string }) {
         disabled={loading}
         onClick={run}
       >
-        {loading ? "Checking…" : "Check vitals"}
+        {loading ? "Mesure…" : "Mesurer les vitals"}
       </Button>
       {msg && (
         <p className={cn("text-atom-caption", err ? "text-danger" : "text-signal")}>
@@ -113,14 +113,14 @@ export function IndexCheckButton({ siteId }: { siteId: string }) {
         setReauthRequired(true);
         return;
       }
-      if (!res.ok) throw new Error(data.error || "Failed");
+      if (!res.ok) throw new Error(data.error || "Échec");
       setResults(data.results || []);
     } catch (e) {
       setResults([
         {
           url: "—",
           ok: false,
-          error: e instanceof Error ? e.message : "Failed",
+          error: e instanceof Error ? e.message : "Échec",
         },
       ]);
     } finally {
@@ -136,7 +136,7 @@ export function IndexCheckButton({ siteId }: { siteId: string }) {
         disabled={loading}
         onClick={run}
       >
-        {loading ? "Inspecting…" : "Check index status"}
+        {loading ? "Inspection…" : "Vérifier l'indexation"}
       </Button>
       {reauthRequired && (
         <div className="flex items-start gap-2 rounded-lg border border-warning/30 bg-warning/5 p-3">
@@ -148,7 +148,7 @@ export function IndexCheckButton({ siteId }: { siteId: string }) {
                 onClick={() => signIn("google")}
                 className="font-medium text-primary underline underline-offset-2"
               >
-                Reconnect &rarr;
+                Reconnecter &rarr;
               </button>
             </p>
           </div>
@@ -163,7 +163,7 @@ export function IndexCheckButton({ siteId }: { siteId: string }) {
             >
               <p className="truncate font-medium text-foreground">{r.url}</p>
               <p className={r.ok === false ? "text-danger" : "text-signal"}>
-                {r.error || r.coverageState || "Unknown"}
+                {r.error || r.coverageState || "Inconnu"}
               </p>
             </div>
           ))}
@@ -180,13 +180,13 @@ export function ExportLinks({ siteId }: { siteId: string }) {
         href={`/api/sites/${siteId}/export?type=keywords`}
         className="inline-flex h-8 items-center rounded-lg border border-border bg-card px-3 text-atom-caption font-medium text-muted-foreground shadow-[var(--shadow-1)] transition hover:bg-muted hover:text-foreground"
       >
-        Export keywords CSV
+        Exporter les mots-clés (CSV)
       </a>
       <a
         href={`/api/sites/${siteId}/export?type=pages`}
         className="inline-flex h-8 items-center rounded-lg border border-border bg-card px-3 text-atom-caption font-medium text-muted-foreground shadow-[var(--shadow-1)] transition hover:bg-muted hover:text-foreground"
       >
-        Export pages CSV
+        Exporter les pages (CSV)
       </a>
     </div>
   );

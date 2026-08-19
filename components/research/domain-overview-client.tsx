@@ -90,7 +90,7 @@ export function DomainOverviewClient({
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
           <div className="text-sm">
             <p className="font-medium text-foreground">
-              Limited data — GSC metrics only
+              Données limitées — métriques Search Console uniquement
             </p>
             <p className="mt-0.5 text-muted-foreground">
               Add a DataForSEO API key in{" "}
@@ -98,7 +98,7 @@ export function DomainOverviewClient({
                 href={`/sites/${siteId}/settings`}
                 className="text-primary underline underline-offset-2"
               >
-                Settings
+                Paramètres
               </Link>{" "}
               for full domain analysis and competitor comparison.
             </p>
@@ -154,7 +154,7 @@ export function DomainOverviewClient({
       {(ownData || competitorData) && (
         <div className="grid gap-4 sm:grid-cols-2">
           {ownData && (
-            <DomainCard data={ownData} label="Your Domain" />
+            <DomainCard data={ownData} label="Votre domaine" />
           )}
           {competitorData && (
             <DomainCard data={competitorData} label="Competitor" />
@@ -185,7 +185,7 @@ function DomainCard({ data, label }: { data: DomainData; label: string }) {
       {data.overview ? (
         <div className="grid grid-cols-2 gap-3">
           <MetricCard
-            label="Organic Keywords"
+            label="Mots-clés organiques"
             value={data.overview.organicKeywords.toLocaleString()}
           />
           <MetricCard
@@ -215,7 +215,7 @@ function DomainCard({ data, label }: { data: DomainData; label: string }) {
         <div className="flex flex-col items-center py-8 text-center">
           <Globe className="size-8 text-muted-foreground/30" />
           <p className="mt-2 text-sm text-muted-foreground">
-            No data available for this domain
+            Aucune donnée disponible pour ce domaine
           </p>
         </div>
       )}
@@ -223,7 +223,7 @@ function DomainCard({ data, label }: { data: DomainData; label: string }) {
       {data.backlinks && (
         <div className="mt-4 border-t border-border pt-4">
           <p className="mb-2 text-xs font-semibold uppercase tracking-[0.12em] text-muted-foreground">
-            Backlink Summary
+            Résumé des backlinks
           </p>
           <div className="grid grid-cols-2 gap-3">
             <MetricCard

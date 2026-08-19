@@ -11,7 +11,7 @@ export async function POST(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -20,14 +20,14 @@ export async function POST(
       select: { userId: true },
     });
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
     const result = await syncVitalsForSite(session.user.id, siteId, 5);
     return Response.json(result);
   } catch (error) {
     console.error(error);
     return Response.json(
-      { error: error instanceof Error ? error.message : "Vitals sync failed" },
+      { error: error instanceof Error ? error.message : "Échec de la synchronisation des vitals" },
       { status: 500 }
     );
   }
@@ -40,7 +40,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -49,7 +49,7 @@ export async function GET(
       select: { userId: true },
     });
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
 
     const reports = await db.vitalsReport.findMany({

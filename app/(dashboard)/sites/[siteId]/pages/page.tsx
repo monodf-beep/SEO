@@ -38,7 +38,7 @@ export default async function PagesPage({ params }: PagesPageProps) {
       <PageHeader
         eyebrow={site.domain}
         title="Pages"
-        description="Landing pages from Search Console, aggregated over the last 28 days."
+        description="Pages de destination issues de la Search Console, agrégées sur les 28 derniers jours."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <DataLagBadge />
@@ -51,15 +51,15 @@ export default async function PagesPage({ params }: PagesPageProps) {
       {pages.length === 0 ? (
         <EmptyState
           icon="◫"
-          title="No pages yet"
-          description="Sync GSC to pull page-level clicks, impressions, and positions."
+          title="Aucune page pour l'instant"
+          description="Synchronisez la Search Console pour récupérer clics, impressions et positions par page."
         />
       ) : (
         <MetricTable
           headers={[
             { label: "URL" },
             { label: "Position", align: "right" },
-            { label: "Clicks", align: "right" },
+            { label: "Clics", align: "right" },
             { label: "Impressions", align: "right" },
             { label: "CTR", align: "right" },
           ]}

@@ -8,7 +8,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -17,7 +17,7 @@ export async function GET(
       select: { userId: true },
     });
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
 
     const url = new URL(req.url);
@@ -26,7 +26,7 @@ export async function GET(
 
     if (!query) {
       return Response.json(
-        { error: "Missing required param: query" },
+        { error: "Paramètre obligatoire manquant : query" },
         { status: 400 }
       );
     }

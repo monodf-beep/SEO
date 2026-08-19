@@ -20,7 +20,7 @@ export function DeleteSiteButton({
     setLoading(true);
     try {
       const res = await fetch(`/api/sites/${siteId}`, { method: "DELETE" });
-      if (!res.ok) throw new Error("Failed to delete site");
+      if (!res.ok) throw new Error("Échec de la suppression du site");
       router.push("/sites");
       router.refresh();
     } catch (err) {
@@ -33,7 +33,7 @@ export function DeleteSiteButton({
     return (
       <Button variant="destructive" size="sm" onClick={() => setConfirming(true)}>
         <Trash2 className="size-3.5" />
-        Delete site
+        Supprimer le site
       </Button>
     );
   }
@@ -41,7 +41,7 @@ export function DeleteSiteButton({
   return (
     <div className="flex items-center gap-3">
       <p className="text-sm text-danger">
-        Delete <strong>{domain}</strong> and all data?
+        Supprimer <strong>{domain}</strong> et toutes ses données ?
       </p>
       <Button
         variant="destructive"
@@ -49,14 +49,14 @@ export function DeleteSiteButton({
         onClick={handleDelete}
         disabled={loading}
       >
-        {loading ? "Deleting..." : "Yes, delete"}
+        {loading ? "Deleting..." : "Oui, supprimer"}
       </Button>
       <Button
         variant="ghost"
         size="sm"
         onClick={() => setConfirming(false)}
       >
-        Cancel
+        Annuler
       </Button>
     </div>
   );

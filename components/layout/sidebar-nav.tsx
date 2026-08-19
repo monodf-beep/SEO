@@ -45,35 +45,35 @@ export function SidebarNav({
     match?.[1] && sites.some((s) => s.id === match[1]) ? match[1] : undefined;
 
   const overviewNav: NavGroup = {
-    label: "Overview",
+    label: "Vue d'ensemble",
     items: [
-      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
       { href: "/sites", label: "Sites", icon: Globe, exact: true },
     ],
   };
 
   const workspaceNav: NavGroup | null = activeSiteId
     ? {
-        label: "Workspace",
+        label: "Espace de travail",
         items: [
-          { href: `/sites/${activeSiteId}`, label: "Overview", icon: LayoutDashboard, exact: true },
-          { href: `/sites/${activeSiteId}/keywords`, label: "Keywords", icon: Search },
-          { href: `/sites/${activeSiteId}/saved-keywords`, label: "Saved Keywords", icon: Bookmark },
+          { href: `/sites/${activeSiteId}`, label: "Vue d'ensemble", icon: LayoutDashboard, exact: true },
+          { href: `/sites/${activeSiteId}/keywords`, label: "Mots-clés", icon: Search },
+          { href: `/sites/${activeSiteId}/saved-keywords`, label: "Mots-clés suivis", icon: Bookmark },
           { href: `/sites/${activeSiteId}/pages`, label: "Pages", icon: FileText },
           { href: `/sites/${activeSiteId}/crawl`, label: "Crawl / Audit", icon: Bug },
           { href: `/sites/${activeSiteId}/vitals`, label: "Vitals", icon: Gauge },
-          { href: `/sites/${activeSiteId}/opportunities`, label: "Opportunities", icon: Lightbulb },
-          { href: `/sites/${activeSiteId}/alerts`, label: "Alerts", icon: Bell },
+          { href: `/sites/${activeSiteId}/opportunities`, label: "Opportunités", icon: Lightbulb },
+          { href: `/sites/${activeSiteId}/alerts`, label: "Alertes", icon: Bell },
         ],
       }
     : null;
 
   const researchNav: NavGroup | null = activeSiteId
     ? {
-        label: "Research",
+        label: "Recherche",
         items: [
-          { href: `/sites/${activeSiteId}/keyword-research`, label: "Keyword Research", icon: SearchCheck },
-          { href: `/sites/${activeSiteId}/domain-overview`, label: "Domain Overview", icon: Globe },
+          { href: `/sites/${activeSiteId}/keyword-research`, label: "Recherche de mots-clés", icon: SearchCheck },
+          { href: `/sites/${activeSiteId}/domain-overview`, label: "Aperçu de domaine", icon: Globe },
           { href: `/sites/${activeSiteId}/backlinks`, label: "Backlinks", icon: LinkIcon },
         ],
       }
@@ -81,10 +81,10 @@ export function SidebarNav({
 
   const connectNav: NavGroup | null = activeSiteId
     ? {
-        label: "Connect",
+        label: "Connexion",
         items: [
-          { href: `/sites/${activeSiteId}/mcp`, label: "AI & MCP", icon: Bot },
-          { href: `/sites/${activeSiteId}/settings`, label: "Settings", icon: Settings },
+          { href: `/sites/${activeSiteId}/mcp`, label: "IA & MCP", icon: Bot },
+          { href: `/sites/${activeSiteId}/settings`, label: "Paramètres", icon: Settings },
         ],
       }
     : null;
@@ -119,7 +119,7 @@ export function SidebarNav({
       {!collapsed && sites.length > 1 && (
         <div>
           <p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-            Properties
+            Propriétés
           </p>
           <div className="space-y-0.5">
             {sites.slice(0, 6).map((s) => {

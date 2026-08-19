@@ -33,8 +33,8 @@ export default async function KeywordsPage({ params }: KeywordsPageProps) {
     <div>
       <PageHeader
         eyebrow={site.domain}
-        title="Keywords"
-        description="Queries with impressions in the last 28 days, aggregated across days."
+        title="Mots-clés"
+        description="Requêtes avec impressions sur les 28 derniers jours, agrégées par jour."
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <DataLagBadge />
@@ -47,8 +47,8 @@ export default async function KeywordsPage({ params }: KeywordsPageProps) {
       {keywords.length === 0 ? (
         <EmptyState
           icon="⌘"
-          title="No keywords yet"
-          description="Sync Google Search Console to populate query-level performance."
+          title="Aucun mot-clé pour l'instant"
+          description="Synchronisez la Search Console pour alimenter les performances par requête."
         />
       ) : (
         <KeywordsTable keywords={keywords} />

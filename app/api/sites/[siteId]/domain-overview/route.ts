@@ -10,7 +10,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -19,7 +19,7 @@ export async function GET(
       select: { userId: true, domain: true },
     });
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
 
     const targetDomain = site.domain;
@@ -66,7 +66,7 @@ export async function GET(
   } catch (error) {
     console.error("Domain overview error:", error);
     return Response.json(
-      { error: "Domain overview failed" },
+      { error: "Échec de l'aperçu de domaine" },
       { status: 500 }
     );
   }

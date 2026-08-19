@@ -36,7 +36,7 @@ export function ThemeToggle() {
     <div className="flex items-center gap-0.5 rounded-full border border-border bg-muted/80 p-0.5">
       <button
         type="button"
-        aria-label="System theme"
+        aria-label="Thème système"
         className={cn(btn, mode === "system" && "bg-secondary text-foreground")}
         onClick={() => choose("system")}
       >
@@ -44,7 +44,7 @@ export function ThemeToggle() {
       </button>
       <button
         type="button"
-        aria-label="Light theme"
+        aria-label="Thème clair"
         className={cn(btn, mode === "light" && "bg-secondary text-foreground")}
         onClick={() => choose("light")}
       >
@@ -52,7 +52,7 @@ export function ThemeToggle() {
       </button>
       <button
         type="button"
-        aria-label="Dark theme"
+        aria-label="Thème sombre"
         className={cn(btn, mode === "dark" && "bg-primary/20 text-primary")}
         onClick={() => choose("dark")}
       >

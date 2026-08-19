@@ -22,7 +22,7 @@ export function SaveKeywordForm({ siteId }: { siteId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query: query.trim(), notes: notes.trim() || undefined }),
       });
-      if (!res.ok) throw new Error("Failed to save keyword");
+      if (!res.ok) throw new Error("Échec de l'enregistrement du mot-clé");
       setQuery("");
       setNotes("");
       setOpen(false);
@@ -38,7 +38,7 @@ export function SaveKeywordForm({ siteId }: { siteId: string }) {
     return (
       <Button size="sm" onClick={() => setOpen(true)}>
         <Plus className="size-3.5" />
-        Save keyword
+        Suivre un mot-clé
       </Button>
     );
   }
@@ -57,20 +57,20 @@ export function SaveKeywordForm({ siteId }: { siteId: string }) {
         />
       </div>
       <div>
-        <label className="mb-1 block text-[11px] text-muted-foreground">Notes (optional)</label>
+        <label className="mb-1 block text-[11px] text-muted-foreground">Notes (facultatif)</label>
         <input
           type="text"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Target page, intent..."
+          placeholder="Page cible, intention…"
           className="h-8 rounded-lg border border-border bg-card px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
         />
       </div>
       <Button size="sm" type="submit" disabled={loading || !query.trim()}>
-        {loading ? "Saving..." : "Save"}
+        {loading ? "Enregistrement…" : "Enregistrer"}
       </Button>
       <Button size="sm" variant="ghost" type="button" onClick={() => setOpen(false)}>
-        Cancel
+        Annuler
       </Button>
     </form>
   );
@@ -102,7 +102,7 @@ export function DeleteKeywordButton({ siteId, query }: { siteId: string; query: 
       onClick={handleDelete}
       disabled={loading}
       className="rounded-full p-1.5 text-muted-foreground transition hover:bg-danger/10 hover:text-danger disabled:opacity-50"
-      title="Remove saved keyword"
+      title="Retirer le mot-clé suivi"
     >
       <Trash2 className="size-3.5" />
     </button>

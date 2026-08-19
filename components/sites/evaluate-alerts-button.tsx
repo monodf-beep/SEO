@@ -17,15 +17,15 @@ export function EvaluateAlertsButton() {
         body: JSON.stringify({ action: "evaluate" }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed");
+      if (!res.ok) throw new Error(data.error || "Échec");
       const n = data.fires?.length ?? 0;
       setMsg(
         n === 0
-          ? "No alerts fired"
+          ? "Aucune alerte déclenchée"
           : `${n} alert(s): ${data.fires.map((f: { message: string }) => f.message).join(" · ")}`
       );
     } catch (e) {
-      setMsg(e instanceof Error ? e.message : "Failed");
+      setMsg(e instanceof Error ? e.message : "Échec");
     } finally {
       setLoading(false);
     }

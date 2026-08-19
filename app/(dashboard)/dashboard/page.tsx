@@ -35,10 +35,10 @@ export default async function DashboardPage() {
     return (
       <div>
         <PageHeader
-          eyebrow="Workspace"
-          title="Welcome to CrawlSEO"
-          description="Connect Google Search Console properties to track rankings, traffic, and opportunity."
-          actions={<AddSiteModal triggerLabel="Connect first site" />}
+          eyebrow="Espace de travail"
+          title="Bienvenue sur CrawlSEO"
+          description="Connectez des propriétés Google Search Console pour suivre positions, trafic et opportunités."
+          actions={<AddSiteModal triggerLabel="Connecter un premier site" />}
         />
         <OnboardingChecklist
           hasSites={false}
@@ -48,9 +48,9 @@ export default async function DashboardPage() {
         />
         <EmptyState
           icon="↗"
-          title="No sites connected"
-          description="Import a GSC property to start monitoring organic search performance. Read-only access only."
-          actionLabel="Add site"
+          title="Aucun site connecté"
+          description="Importez une propriété Search Console pour suivre vos performances de recherche organique. Accès en lecture seule."
+          actionLabel="Ajouter un site"
           actionHref="/sites"
         />
       </div>
@@ -77,8 +77,8 @@ export default async function DashboardPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Workspace"
-        title="Portfolio overview"
+        eyebrow="Espace de travail"
+        title="Vue du portefeuille"
         description={`${sites.length} site${sites.length === 1 ? "" : "s"} · last 28 days vs prior period`}
         actions={
           <div className="flex items-center gap-3">
@@ -121,12 +121,12 @@ export default async function DashboardPage() {
 
             {!metrics ? (
               <div className="mt-6 rounded-lg border border-dashed border-border/70 bg-muted/20 px-3 py-4 text-sm text-muted-foreground">
-                Waiting for first GSC sync…
+                En attente de la première synchronisation Search Console…
               </div>
             ) : (
               <div className="mt-5 grid grid-cols-2 gap-3">
                 <Stat
-                  label="Clicks"
+                  label="Clics"
                   value={formatCompact(metrics.current.clicks)}
                   delta={formatDeltaPercent(metrics.deltas.clicks)}
                   positive={metrics.deltas.clicks >= 0}
@@ -138,7 +138,7 @@ export default async function DashboardPage() {
                   positive={metrics.deltas.impressions >= 0}
                 />
                 <Stat
-                  label="Avg pos"
+                  label="Pos. moy."
                   value={
                     metrics.current.avgPosition > 0
                       ? metrics.current.avgPosition.toFixed(1)
@@ -152,7 +152,7 @@ export default async function DashboardPage() {
                   positive={metrics.deltas.avgPosition >= 0}
                 />
                 <Stat
-                  label="Keywords"
+                  label="Mots-clés"
                   value={metrics.current.uniqueKeywords.toLocaleString()}
                 />
               </div>

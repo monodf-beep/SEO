@@ -13,7 +13,7 @@ export async function POST(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -23,11 +23,11 @@ export async function POST(
     });
 
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
 
     if (!site.gscProperty) {
-      return Response.json({ error: "No GSC property" }, { status: 400 });
+      return Response.json({ error: "Aucune propriété Search Console" }, { status: 400 });
     }
 
     const pages = await getTopPages(siteId, 28, 8);

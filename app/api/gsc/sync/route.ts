@@ -12,7 +12,7 @@ export async function POST(req: Request) {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = (await req.json()) as { siteId: string };
@@ -25,14 +25,14 @@ export async function POST(req: Request) {
 
     if (!site || site.userId !== session.user.id) {
       return Response.json(
-        { error: "Site not found or unauthorized" },
+        { error: "Site introuvable ou non autorisé" },
         { status: 404 }
       );
     }
 
     if (!site.gscProperty) {
       return Response.json(
-        { error: "Site does not have GSC property connected" },
+        { error: "Ce site n'a pas de propriété Search Console connectée" },
         { status: 400 }
       );
     }
@@ -129,7 +129,7 @@ export async function POST(req: Request) {
 
     return Response.json(
       {
-        error: error instanceof Error ? error.message : "Failed to sync GSC data",
+        error: error instanceof Error ? error.message : "Échec de la synchronisation Search Console",
       },
       { status: 500 }
     );

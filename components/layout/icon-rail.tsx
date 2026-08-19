@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const items = [
   {
     href: "/dashboard",
-    label: "Overview",
+    label: "Vue d'ensemble",
     match: (p: string) => p === "/dashboard" || p === "/",
     icon: (
       <svg viewBox="0 0 24 24" className="size-4" fill="none" aria-hidden>

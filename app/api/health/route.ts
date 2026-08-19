@@ -13,7 +13,7 @@ export async function GET() {
     return Response.json(
       {
         status: "error",
-        message: error instanceof Error ? error.message : "Unknown error",
+        message: error instanceof Error ? error.message : "Erreur inconnue",
       },
       { status: 503 }
     );

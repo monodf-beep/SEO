@@ -9,7 +9,7 @@ export async function GET(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const { siteId } = await params;
@@ -18,7 +18,7 @@ export async function GET(
       select: { userId: true, domain: true },
     });
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Not found" }, { status: 404 });
+      return Response.json({ error: "Introuvable" }, { status: 404 });
     }
 
     const type = new URL(req.url).searchParams.get("type") || "keywords";
@@ -36,6 +36,6 @@ export async function GET(
     });
   } catch (error) {
     console.error(error);
-    return Response.json({ error: "Export failed" }, { status: 500 });
+    return Response.json({ error: "Échec de l'export" }, { status: 500 });
   }
 }

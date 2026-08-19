@@ -5,13 +5,13 @@ export async function POST(req: Request) {
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const body = (await req.json()) as { login?: string; password?: string };
     if (!body.login || !body.password) {
       return Response.json(
-        { error: "Missing login or password" },
+        { error: "Identifiant ou mot de passe manquant" },
         { status: 400 }
       );
     }
@@ -20,6 +20,6 @@ export async function POST(req: Request) {
     return Response.json({ success: ok });
   } catch (error) {
     console.error("API key test error:", error);
-    return Response.json({ error: "Connection test failed" }, { status: 500 });
+    return Response.json({ error: "Échec du test de connexion" }, { status: 500 });
   }
 }

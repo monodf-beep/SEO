@@ -11,7 +11,7 @@ export async function GET(
     const session = await auth();
 
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     const site = await db.site.findUnique({
@@ -35,12 +35,12 @@ export async function GET(
     });
 
     if (!site) {
-      return Response.json({ error: "Site not found" }, { status: 404 });
+      return Response.json({ error: "Site introuvable" }, { status: 404 });
     }
 
     // Verify ownership
     if (site.userId !== session.user.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 403 });
+      return Response.json({ error: "Non autorisé" }, { status: 403 });
     }
 
     // Remove userId from response
@@ -52,7 +52,7 @@ export async function GET(
 
     return Response.json(
       {
-        error: error instanceof Error ? error.message : "Failed to fetch site",
+        error: error instanceof Error ? error.message : "Échec de la récupération du site",
       },
       { status: 500 }
     );
@@ -69,7 +69,7 @@ export async function PUT(
     const session = await auth();
 
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     // Verify ownership
@@ -79,7 +79,7 @@ export async function PUT(
     });
 
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 403 });
+      return Response.json({ error: "Non autorisé" }, { status: 403 });
     }
 
     const { domain, gscProperty } = (await req.json()) as {
@@ -107,7 +107,7 @@ export async function PUT(
 
     return Response.json(
       {
-        error: error instanceof Error ? error.message : "Failed to update site",
+        error: error instanceof Error ? error.message : "Échec de la mise à jour du site",
       },
       { status: 500 }
     );
@@ -124,7 +124,7 @@ export async function DELETE(
     const session = await auth();
 
     if (!session?.user?.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
+      return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
     // Verify ownership
@@ -134,7 +134,7 @@ export async function DELETE(
     });
 
     if (!site || site.userId !== session.user.id) {
-      return Response.json({ error: "Unauthorized" }, { status: 403 });
+      return Response.json({ error: "Non autorisé" }, { status: 403 });
     }
 
     // Delete site and cascade deletes keywords, pages, crawls, vitals, alerts
@@ -148,7 +148,7 @@ export async function DELETE(
 
     return Response.json(
       {
-        error: error instanceof Error ? error.message : "Failed to delete site",
+        error: error instanceof Error ? error.message : "Échec de la suppression du site",
       },
       { status: 500 }
     );
