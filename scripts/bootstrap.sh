@@ -46,6 +46,11 @@ AUTH_TRUST_HOST=true
 # ---- public hostname, read by docker-compose.prod.yml and the Caddyfile ----
 CRAWLSEO_DOMAIN=${DOMAIN}
 
+# ---- remote MCP endpoint (streamable HTTP), see SETUP.md ----
+# The endpoint is protected by a capability URL: /<MCP_HTTP_SECRET>/mcp
+MCP_HTTP_SECRET=$(rand)
+MCP_DOMAIN=${DOMAIN:+mcp-${DOMAIN}}
+
 # ---- Google OAuth: fill these in, see SETUP.md ----
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=

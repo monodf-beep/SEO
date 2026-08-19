@@ -9,6 +9,8 @@
  * Run: npx tsx mcp/server.ts
  */
 
+import { pathToFileURL } from "node:url";
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -36,6 +38,11 @@ import {
 // ---------------------------------------------------------------------------
 // Server
 // ---------------------------------------------------------------------------
+
+// Exported as a factory rather than a singleton: the streamable-HTTP entry
+// point (mcp/http-server.ts) needs one McpServer per session, since a server
+// instance can only be connected to a single transport.
+export function buildServer(): McpServer {
 
 const server = new McpServer({
   name: "CrawlSEO",
@@ -347,17 +354,26 @@ server.tool(
   }
 );
 
+return server;
+}
+
 // ---------------------------------------------------------------------------
-// Start
+// Start (stdio entry point — skipped when imported by http-server.ts)
 // ---------------------------------------------------------------------------
 
 async function main() {
   const transport = new StdioServerTransport();
-  await server.connect(transport);
+  await buildServer().connect(transport);
   console.error("CrawlSEO MCP server running on stdio");
 }
 
-main().catch((err) => {
-  console.error("Failed to start MCP server:", err);
-  process.exit(1);
-});
+const isDirectRun =
+  process.argv[1] !== undefined &&
+  import.meta.url === pathToFileURL(process.argv[1]).href;
+
+if (isDirectRun) {
+  main().catch((err) => {
+    console.error("Failed to start MCP server:", err);
+    process.exit(1);
+  });
+}

@@ -239,7 +239,63 @@ DISABLE_REGISTRATION=true
 
 Sans ça, n'importe qui atteignant l'URL peut se créer un compte.
 
-## Brancher le serveur MCP sur Claude Code
+## Connecteur MCP distant (HTTP) — recommandé
+
+Le serveur MCP existe en deux transports. Le transport HTTP est celui à
+utiliser depuis Claude Desktop, claude.ai et le mobile : il s'ajoute dans
+**Paramètres → Connecteurs**, sans processus local. (Le transport stdio via
+SSH échoue notamment sur Windows, où OpenSSH meurt sans message quand il est
+lancé sans console par Claude Desktop.)
+
+L'endpoint est protégé par une URL-capacité : le secret fait partie du chemin,
+`/<MCP_HTTP_SECRET>/mcp`. Sans le secret exact, le serveur répond 404 sans rien
+révéler. Même modèle de confiance qu'une URL de webhook — ne partage jamais
+l'URL complète.
+
+### Déployer
+
+`bootstrap.sh` génère `MCP_HTTP_SECRET` et `MCP_DOMAIN` pour les nouvelles
+installations. Sur une installation existante, ajouter à `.env` :
+
+```bash
+printf 'MCP_HTTP_SECRET=%s\nMCP_DOMAIN=mcp-siip.srv1697018.hstgr.cloud\n' "$(openssl rand -hex 32)" >> .env
+docker compose -f docker-compose.traefik.yml up -d mcp
+```
+
+Le service `mcp` monte le dépôt (il faut `npm ci` exécuté sur l'hôte) et
+Traefik lui émet un certificat pour `MCP_DOMAIN` — couvert par le DNS wildcard,
+rien à créer.
+
+Vérifier :
+
+```bash
+curl -s https://mcp-siip.srv1697018.hstgr.cloud/healthz   # → ok
+grep MCP_HTTP_SECRET .env                                  # récupérer le secret
+```
+
+### Connecter
+
+Dans Claude Desktop ou claude.ai : **Paramètres → Connecteurs → Ajouter un
+connecteur personnalisé**, avec l'URL :
+
+```
+https://mcp-siip.srv1697018.hstgr.cloud/<MCP_HTTP_SECRET>/mcp
+```
+
+Authentification : aucune (le secret est dans l'URL).
+
+### Révoquer l'accès
+
+Regénérer le secret et redémarrer :
+
+```bash
+sed -i "s/^MCP_HTTP_SECRET=.*/MCP_HTTP_SECRET=$(openssl rand -hex 32)/" .env
+docker compose -f docker-compose.traefik.yml up -d mcp
+```
+
+L'ancienne URL devient immédiatement un 404.
+
+## Brancher le serveur MCP sur Claude Code (stdio)
 
 Le serveur MCP expose 10 outils (`list_sites`, `get_keywords`, `run_crawl`,
 `get_crawl_issues`, `get_opportunities`…) et lit directement la base.

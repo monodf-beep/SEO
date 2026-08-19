@@ -54,6 +54,51 @@ services:
       traefik.http.routers.crawlseo.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
       traefik.http.services.crawlseo.loadbalancer.server.port: "3000"
 
+  # Remote MCP endpoint (streamable HTTP) — lets claude.ai connectors and
+  # Claude Desktop reach the SEO tools without spawning a local process.
+  # Runs from the checked-out repo via a bind mount, so it needs `npm ci`
+  # to have been run on the host. Full bookworm image on purpose: the Prisma
+  # engine generated on the host needs glibc + libssl3, which slim/alpine
+  # variants don't reliably provide.
+  mcp:
+    image: node:22-bookworm
+    restart: always
+    working_dir: /srv/crawlseo
+    command: ["npx", "tsx", "mcp/http-server.ts"]
+    volumes:
+      - .:/srv/crawlseo
+    expose:
+      - "8788"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: "8788"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-crawlseo}:${POSTGRES_PASSWORD:-changeme}@db:5432/${POSTGRES_DB:-crawlseo}
+      MCP_HTTP_SECRET: ${MCP_HTTP_SECRET:?set MCP_HTTP_SECRET in .env (openssl rand -hex 32)}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://localhost:8788/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    deploy:
+      resources:
+        limits:
+          memory: ${MCP_MEMORY_LIMIT:-384m}
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.crawlseo-mcp.rule: Host(`${MCP_DOMAIN:?set MCP_DOMAIN in .env}`)
+      traefik.http.routers.crawlseo-mcp.entrypoints: ${TRAEFIK_ENTRYPOINT:-websecure}
+      traefik.http.routers.crawlseo-mcp.tls.certresolver: ${TRAEFIK_CERTRESOLVER:-letsencrypt}
+      traefik.http.services.crawlseo-mcp.loadbalancer.server.port: "8788"
+
   db:
     image: postgres:16-alpine
     restart: always
