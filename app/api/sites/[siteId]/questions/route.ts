@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { fetchQuestions, supportedQuestionLanguages } from "@/lib/google/questions";
+import { peopleAlsoAsk } from "@/lib/dataforseo/client";
 
 export async function GET(
   req: Request,
@@ -35,8 +36,15 @@ export async function GET(
       );
     }
 
-    const categories = await fetchQuestions(query, lang);
-    return Response.json({ source: "autocomplete", categories });
+    // Google PAA goes through DataForSEO credits, so it is strictly opt-in.
+    const includePaa = url.searchParams.get("paa") === "1";
+
+    const [categories, paa] = await Promise.all([
+      fetchQuestions(query, lang),
+      includePaa ? peopleAlsoAsk(session.user.id, query, lang) : Promise.resolve(null),
+    ]);
+
+    return Response.json({ source: "autocomplete", categories, paa });
   } catch (error) {
     console.error("Question research error:", error);
     return Response.json({ error: "Question research failed" }, { status: 500 });

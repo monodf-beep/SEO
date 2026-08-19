@@ -25,6 +25,13 @@ type QuestionCategoryResult = {
   groups: { modifier: string; suggestions: string[] }[];
 };
 
+type PaaItem = {
+  question: string;
+  answer: string | null;
+  sourceUrl: string | null;
+  sourceTitle: string | null;
+};
+
 type Mode = "keywords" | "questions";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -48,6 +55,8 @@ export function KeywordResearchClient({
   const [questionCategories, setQuestionCategories] = useState<
     QuestionCategoryResult[]
   >([]);
+  const [includePaa, setIncludePaa] = useState(false);
+  const [paaResults, setPaaResults] = useState<PaaItem[] | null>(null);
   const [source, setSource] = useState<string | null>(null);
   const [savedSet, setSavedSet] = useState<Set<string>>(new Set());
   const [savingSet, setSavingSet] = useState<Set<string>>(new Set());
@@ -59,15 +68,18 @@ export function KeywordResearchClient({
     setLoading(true);
     setResults([]);
     setQuestionCategories([]);
+    setPaaResults(null);
     setSource(null);
 
     try {
       if (mode === "questions") {
+        const paaParam = includePaa && hasDataForSEO ? "&paa=1" : "";
         const res = await fetch(
-          `/api/sites/${siteId}/questions?q=${encodeURIComponent(query.trim())}&lang=${lang}`
+          `/api/sites/${siteId}/questions?q=${encodeURIComponent(query.trim())}&lang=${lang}${paaParam}`
         );
         const data = await res.json();
         setQuestionCategories(data.categories ?? []);
+        setPaaResults(data.paa ?? null);
         setSource(data.source ?? null);
       } else {
         const res = await fetch(
@@ -108,7 +120,10 @@ export function KeywordResearchClient({
     }
   }
 
-  const hasResults = mode === "questions" ? questionCategories.length > 0 : results.length > 0;
+  const hasResults =
+    mode === "questions"
+      ? questionCategories.length > 0 || (paaResults?.length ?? 0) > 0
+      : results.length > 0;
 
   return (
     <div className="space-y-4">
@@ -173,6 +188,20 @@ export function KeywordResearchClient({
             <option value="fr">Français</option>
           </select>
         )}
+        {mode === "questions" && hasDataForSEO && (
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+            <input
+              type="checkbox"
+              checked={includePaa}
+              onChange={(e) => setIncludePaa(e.target.checked)}
+              className="size-4 rounded border-border accent-primary"
+            />
+            Include Google &ldquo;People Also Ask&rdquo;
+            <span className="text-xs text-muted-foreground/70">
+              (~$0.002 per search via DataForSEO)
+            </span>
+          </label>
+        )}
       </div>
 
       {/* Search input */}
@@ -204,6 +233,71 @@ export function KeywordResearchClient({
           Research
         </button>
       </form>
+
+      {/* Google People Also Ask results */}
+      {mode === "questions" && paaResults !== null && (
+        <div className="panel overflow-hidden">
+          <div className="border-b border-border bg-muted/30 px-4 py-2 text-sm font-medium text-foreground">
+            Google &ldquo;People Also Ask&rdquo;
+          </div>
+          {paaResults.length === 0 ? (
+            <div className="px-4 py-6 text-sm text-muted-foreground">
+              Google shows no &ldquo;People Also Ask&rdquo; box for this query.
+            </div>
+          ) : (
+            <div className="divide-y divide-border/50">
+              {paaResults.map((item) => {
+                const isSaved = savedSet.has(item.question);
+                const isSaving = savingSet.has(item.question);
+                return (
+                  <div key={item.question} className="px-4 py-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <span className="text-sm font-medium text-foreground">
+                        {item.question}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleSave(item.question)}
+                        disabled={isSaved || isSaving}
+                        className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
+                      >
+                        {isSaved ? (
+                          <>
+                            <Check className="size-3 text-signal" />
+                            Saved
+                          </>
+                        ) : isSaving ? (
+                          <Loader2 className="size-3 animate-spin" />
+                        ) : (
+                          <>
+                            <Bookmark className="size-3" />
+                            Save
+                          </>
+                        )}
+                      </button>
+                    </div>
+                    {item.answer && (
+                      <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">
+                        {item.answer}
+                      </p>
+                    )}
+                    {item.sourceUrl && (
+                      <a
+                        href={item.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="mt-1 inline-block truncate text-xs text-primary underline underline-offset-2"
+                      >
+                        {item.sourceTitle ?? item.sourceUrl}
+                      </a>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Question results */}
       {mode === "questions" &&

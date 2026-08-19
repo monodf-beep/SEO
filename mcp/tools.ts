@@ -109,4 +109,18 @@ export const tools = [
         .describe('Language code for suggestions: "en" or "fr" (default "en")'),
     },
   },
+  {
+    name: "get_people_also_ask",
+    description:
+      "Get the real Google 'People Also Ask' questions for a keyword, with answer snippets and source URLs. Uses the site owner's DataForSEO credentials (~$0.002 per call).",
+    schema: {
+      siteId: z.string().describe("A site ID whose owner's DataForSEO API key will be used"),
+      query: z.string().describe("Keyword to fetch the Google SERP for"),
+      language: z
+        .string()
+        .optional()
+        .default("en")
+        .describe('Language code: "en" (US SERP) or "fr" (France SERP), default "en"'),
+    },
+  },
 ] as const;

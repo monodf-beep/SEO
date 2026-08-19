@@ -198,3 +198,25 @@ export function formatQuestions(
 
   return `${total} idea(s) for "${seed}":\n\n` + lines.join("\n").trimEnd();
 }
+
+export function formatPaa(
+  seed: string,
+  paa: { question: string; answer: string | null; sourceUrl: string | null; sourceTitle: string | null }[]
+): string {
+  if (paa.length === 0) {
+    return `Google shows no "People Also Ask" box for "${seed}".`;
+  }
+
+  const lines: string[] = [];
+  for (const item of paa) {
+    lines.push(`Q: ${item.question}`);
+    if (item.answer) {
+      const answer = item.answer.length > 200 ? item.answer.slice(0, 197) + "..." : item.answer;
+      lines.push(`   ${answer}`);
+    }
+    if (item.sourceUrl) lines.push(`   Source: ${item.sourceUrl}`);
+    lines.push("");
+  }
+
+  return `${paa.length} "People Also Ask" question(s) for "${seed}":\n\n` + lines.join("\n").trimEnd();
+}

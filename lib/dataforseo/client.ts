@@ -30,6 +30,13 @@ export type BacklinksOverviewResult = {
   nofollow: number;
 };
 
+export type PaaItem = {
+  question: string;
+  answer: string | null;
+  sourceUrl: string | null;
+  sourceTitle: string | null;
+};
+
 export type BacklinkItem = {
   referringDomain: string;
   sourceUrl: string;
@@ -143,6 +150,58 @@ export async function keywordResearch(
     competition: item.keyword_data?.keyword_info?.competition ?? null,
     trend: item.keyword_data?.keyword_info?.monthly_searches?.map((m: any) => m.search_volume) ?? null,
   }));
+}
+
+// ---------------------------------------------------------------------------
+// People Also Ask (Google SERP)
+// ---------------------------------------------------------------------------
+
+const PAA_LOCATIONS: Record<string, number> = {
+  en: 2840, // United States
+  fr: 2250, // France
+};
+
+/**
+ * Fetch the "People Also Ask" questions Google shows for a keyword.
+ * Returns null when no credentials are configured or the request fails,
+ * and [] when the SERP simply has no PAA block.
+ */
+export async function peopleAlsoAsk(
+  userId: string,
+  keyword: string,
+  language = "en",
+  location?: number
+): Promise<PaaItem[] | null> {
+  const creds = await getCredentials(userId);
+  if (!creds) return null;
+
+  const data = await dataforseoPost<any>(creds.login, creds.password, "/serp/google/organic/live/advanced", [
+    {
+      keyword,
+      language_code: language,
+      location_code: location ?? PAA_LOCATIONS[language] ?? 2840,
+      depth: 10,
+    },
+  ]);
+
+  const items = data?.tasks?.[0]?.result?.[0]?.items;
+  if (!items) return data ? [] : null;
+
+  const paaBlock = items.find((item: any) => item.type === "people_also_ask");
+  if (!paaBlock?.items) return [];
+
+  return paaBlock.items
+    .filter((el: any) => el.type === "people_also_ask_element")
+    .map((el: any) => {
+      const expanded = el.expanded_element?.[0];
+      return {
+        question: el.title ?? "",
+        answer: expanded?.description ?? null,
+        sourceUrl: expanded?.url ?? null,
+        sourceTitle: expanded?.title ?? null,
+      };
+    })
+    .filter((p: PaaItem) => p.question);
 }
 
 // ---------------------------------------------------------------------------

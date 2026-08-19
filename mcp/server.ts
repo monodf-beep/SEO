@@ -25,6 +25,7 @@ import {
 import { getAllOpportunities } from "../lib/seo-opportunities";
 import { runSiteCrawl } from "../lib/crawler/engine";
 import { fetchQuestions, supportedQuestionLanguages } from "../lib/google/questions";
+import { peopleAlsoAsk } from "../lib/dataforseo/client";
 
 import {
   formatSiteOverview,
@@ -35,6 +36,7 @@ import {
   formatVitals,
   formatOpportunities,
   formatQuestions,
+  formatPaa,
 } from "./formatters";
 
 // ---------------------------------------------------------------------------
@@ -385,6 +387,47 @@ server.tool(
 
     const categories = await fetchQuestions(query, language);
     return { content: [{ type: "text", text: formatQuestions(query, categories) }] };
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 12. get_people_also_ask
+// ---------------------------------------------------------------------------
+
+server.tool(
+  "get_people_also_ask",
+  "Get the real Google 'People Also Ask' questions for a keyword, with answer snippets and source URLs. Uses the site owner's DataForSEO credentials (~$0.002 per call).",
+  {
+    siteId: z.string().describe("A site ID whose owner's DataForSEO API key will be used"),
+    query: z.string().describe("Keyword to fetch the Google SERP for"),
+    language: z
+      .string()
+      .optional()
+      .default("en")
+      .describe('Language code: "en" (US SERP) or "fr" (France SERP), default "en"'),
+  },
+  async ({ siteId, query, language }) => {
+    const site = await db.site.findUnique({
+      where: { id: siteId },
+      select: { userId: true },
+    });
+    if (!site) {
+      return { content: [{ type: "text", text: `Site not found: ${siteId}` }] };
+    }
+
+    const paa = await peopleAlsoAsk(site.userId, query, language);
+    if (paa === null) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: "No DataForSEO API key configured (or the request failed). Add credentials in the site settings to enable People Also Ask.",
+          },
+        ],
+      };
+    }
+
+    return { content: [{ type: "text", text: formatPaa(query, paa) }] };
   }
 );
 
