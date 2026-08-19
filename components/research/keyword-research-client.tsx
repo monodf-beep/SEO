@@ -7,7 +7,7 @@ import {
   Bookmark,
   Check,
   AlertTriangle,
-  Settings,
+  HelpCircle,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -20,6 +20,19 @@ type KeywordResult = {
   trend: number[] | null;
 };
 
+type QuestionCategoryResult = {
+  category: string;
+  groups: { modifier: string; suggestions: string[] }[];
+};
+
+type Mode = "keywords" | "questions";
+
+const CATEGORY_LABELS: Record<string, string> = {
+  questions: "Questions",
+  prepositions: "Prepositions",
+  comparisons: "Comparisons",
+};
+
 export function KeywordResearchClient({
   siteId,
   hasDataForSEO,
@@ -27,9 +40,14 @@ export function KeywordResearchClient({
   siteId: string;
   hasDataForSEO: boolean;
 }) {
+  const [mode, setMode] = useState<Mode>("keywords");
+  const [lang, setLang] = useState("en");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<KeywordResult[]>([]);
+  const [questionCategories, setQuestionCategories] = useState<
+    QuestionCategoryResult[]
+  >([]);
   const [source, setSource] = useState<string | null>(null);
   const [savedSet, setSavedSet] = useState<Set<string>>(new Set());
   const [savingSet, setSavingSet] = useState<Set<string>>(new Set());
@@ -40,17 +58,28 @@ export function KeywordResearchClient({
 
     setLoading(true);
     setResults([]);
+    setQuestionCategories([]);
     setSource(null);
 
     try {
-      const res = await fetch(
-        `/api/sites/${siteId}/keyword-research?q=${encodeURIComponent(query.trim())}`
-      );
-      const data = await res.json();
-      setResults(data.keywords ?? []);
-      setSource(data.source ?? null);
+      if (mode === "questions") {
+        const res = await fetch(
+          `/api/sites/${siteId}/questions?q=${encodeURIComponent(query.trim())}&lang=${lang}`
+        );
+        const data = await res.json();
+        setQuestionCategories(data.categories ?? []);
+        setSource(data.source ?? null);
+      } else {
+        const res = await fetch(
+          `/api/sites/${siteId}/keyword-research?q=${encodeURIComponent(query.trim())}`
+        );
+        const data = await res.json();
+        setResults(data.keywords ?? []);
+        setSource(data.source ?? null);
+      }
     } catch {
       setResults([]);
+      setQuestionCategories([]);
     } finally {
       setLoading(false);
     }
@@ -79,10 +108,12 @@ export function KeywordResearchClient({
     }
   }
 
+  const hasResults = mode === "questions" ? questionCategories.length > 0 : results.length > 0;
+
   return (
     <div className="space-y-4">
       {/* Autocomplete fallback banner */}
-      {!hasDataForSEO && (
+      {mode === "keywords" && !hasDataForSEO && (
         <div className="flex items-start gap-3 rounded-lg border border-warning/30 bg-warning/5 p-4">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-warning" />
           <div className="text-sm">
@@ -103,6 +134,47 @@ export function KeywordResearchClient({
         </div>
       )}
 
+      {/* Mode toggle */}
+      <div className="flex items-center gap-2">
+        <div className="inline-flex rounded-lg border border-border p-0.5">
+          <button
+            type="button"
+            onClick={() => setMode("keywords")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+              mode === "keywords"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Search className="size-3.5" />
+            Keywords
+          </button>
+          <button
+            type="button"
+            onClick={() => setMode("questions")}
+            className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${
+              mode === "questions"
+                ? "bg-primary text-primary-foreground"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <HelpCircle className="size-3.5" />
+            Questions
+          </button>
+        </div>
+        {mode === "questions" && (
+          <select
+            value={lang}
+            onChange={(e) => setLang(e.target.value)}
+            className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none"
+            aria-label="Suggestion language"
+          >
+            <option value="en">English</option>
+            <option value="fr">Français</option>
+          </select>
+        )}
+      </div>
+
       {/* Search input */}
       <form onSubmit={handleSearch} className="flex gap-2">
         <div className="relative flex-1">
@@ -111,7 +183,11 @@ export function KeywordResearchClient({
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Enter a seed keyword..."
+            placeholder={
+              mode === "questions"
+                ? "Enter a topic to mine questions for..."
+                : "Enter a seed keyword..."
+            }
             className="w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-4 text-sm text-foreground placeholder:text-muted-foreground/50 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
@@ -129,8 +205,63 @@ export function KeywordResearchClient({
         </button>
       </form>
 
-      {/* Results */}
-      {results.length > 0 && (
+      {/* Question results */}
+      {mode === "questions" &&
+        questionCategories.map((cat) => (
+          <div key={cat.category} className="panel overflow-hidden">
+            <div className="border-b border-border bg-muted/30 px-4 py-2 text-sm font-medium text-foreground">
+              {CATEGORY_LABELS[cat.category] ?? cat.category}
+            </div>
+            <div className="divide-y divide-border/50">
+              {cat.groups.map((group) => (
+                <div key={group.modifier} className="px-4 py-3">
+                  <div className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    {group.modifier}
+                  </div>
+                  <ul className="space-y-1.5">
+                    {group.suggestions.map((suggestion) => {
+                      const isSaved = savedSet.has(suggestion);
+                      const isSaving = savingSet.has(suggestion);
+                      return (
+                        <li
+                          key={suggestion}
+                          className="flex items-center justify-between gap-3"
+                        >
+                          <span className="text-sm text-foreground">
+                            {suggestion}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleSave(suggestion)}
+                            disabled={isSaved || isSaving}
+                            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
+                          >
+                            {isSaved ? (
+                              <>
+                                <Check className="size-3 text-signal" />
+                                Saved
+                              </>
+                            ) : isSaving ? (
+                              <Loader2 className="size-3 animate-spin" />
+                            ) : (
+                              <>
+                                <Bookmark className="size-3" />
+                                Save
+                              </>
+                            )}
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+
+      {/* Keyword results */}
+      {mode === "keywords" && results.length > 0 && (
         <div className="panel overflow-hidden">
           {source === "autocomplete" && (
             <div className="border-b border-border bg-muted/30 px-4 py-2 text-xs text-muted-foreground">
@@ -227,7 +358,7 @@ export function KeywordResearchClient({
       )}
 
       {/* Empty state after search */}
-      {!loading && results.length === 0 && source !== null && (
+      {!loading && !hasResults && source !== null && (
         <div className="panel flex flex-col items-center py-12 text-center">
           <Search className="size-10 text-muted-foreground/30" />
           <p className="mt-3 font-medium text-foreground">No results found</p>

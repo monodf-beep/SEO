@@ -173,3 +173,28 @@ export function formatOpportunities(opportunities: any): string {
 
   return lines.join("\n");
 }
+
+export function formatQuestions(
+  seed: string,
+  categories: { category: string; groups: { modifier: string; suggestions: string[] }[] }[]
+): string {
+  if (categories.length === 0) {
+    return `No question ideas found for "${seed}".`;
+  }
+
+  const lines: string[] = [];
+  let total = 0;
+
+  for (const cat of categories) {
+    lines.push(`-- ${cat.category} --`);
+    for (const group of cat.groups) {
+      for (const suggestion of group.suggestions) {
+        lines.push(`  ${suggestion}`);
+        total++;
+      }
+    }
+    lines.push("");
+  }
+
+  return `${total} idea(s) for "${seed}":\n\n` + lines.join("\n").trimEnd();
+}

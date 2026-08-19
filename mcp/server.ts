@@ -24,6 +24,7 @@ import {
 } from "../lib/seo-metrics";
 import { getAllOpportunities } from "../lib/seo-opportunities";
 import { runSiteCrawl } from "../lib/crawler/engine";
+import { fetchQuestions, supportedQuestionLanguages } from "../lib/google/questions";
 
 import {
   formatSiteOverview,
@@ -33,6 +34,7 @@ import {
   formatCrawlIssues,
   formatVitals,
   formatOpportunities,
+  formatQuestions,
 } from "./formatters";
 
 // ---------------------------------------------------------------------------
@@ -351,6 +353,38 @@ server.tool(
   async ({ siteId }) => {
     const opportunities = await getAllOpportunities(siteId);
     return { content: [{ type: "text", text: formatOpportunities(opportunities) }] };
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 11. get_questions
+// ---------------------------------------------------------------------------
+
+server.tool(
+  "get_questions",
+  "Get AnswerThePublic-style question and long-tail ideas for a seed keyword, mined from Google Autocomplete (questions, prepositions, comparisons). No API key required.",
+  {
+    query: z.string().describe("Seed keyword or topic to expand"),
+    language: z
+      .string()
+      .optional()
+      .default("en")
+      .describe('Language code for suggestions: "en" or "fr" (default "en")'),
+  },
+  async ({ query, language }) => {
+    if (!supportedQuestionLanguages().includes(language)) {
+      return {
+        content: [
+          {
+            type: "text",
+            text: `Unsupported language: ${language}. Supported: ${supportedQuestionLanguages().join(", ")}`,
+          },
+        ],
+      };
+    }
+
+    const categories = await fetchQuestions(query, language);
+    return { content: [{ type: "text", text: formatQuestions(query, categories) }] };
   }
 );
 

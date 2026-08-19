@@ -96,4 +96,17 @@ export const tools = [
       siteId: z.string().describe("The site ID"),
     },
   },
+  {
+    name: "get_questions",
+    description:
+      "Get AnswerThePublic-style question and long-tail ideas for a seed keyword, mined from Google Autocomplete (questions, prepositions, comparisons). No API key required.",
+    schema: {
+      query: z.string().describe("Seed keyword or topic to expand"),
+      language: z
+        .string()
+        .optional()
+        .default("en")
+        .describe('Language code for suggestions: "en" or "fr" (default "en")'),
+    },
+  },
 ] as const;
