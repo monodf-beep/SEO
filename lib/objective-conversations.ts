@@ -33,9 +33,21 @@ export type ConversationReport = { actions: GeneratedAction[]; notes: string[] }
 
 const quote = (s: string) => `« ${s} »`;
 
+/** Past this, a post is dead: no feed resurfaces it, and a comment there
+ *  reaches nobody. Applied everywhere a "join this conversation" action is
+ *  built, so a search result sorted by relevance rather than recency (some
+ *  Apify actors) can't slip a years-old post past the age check. */
+const MAX_AGE_DAYS = 60;
+
 function daysAgo(iso: string): number {
   const t = Date.parse(iso);
   return Number.isFinite(t) ? Math.max(0, Math.round((Date.now() - t) / 86_400_000)) : 999;
+}
+
+/** Missing or unparseable dates count as stale: better to skip a post than
+ *  suggest commenting on one we can't actually vouch for the age of. */
+function isFreshEnough(iso: string | null | undefined): iso is string {
+  return iso != null && daysAgo(iso) <= MAX_AGE_DAYS;
 }
 
 async function getJson(url: string, notes: string[], label: string, headers: Record<string, string> = {}) {
@@ -80,7 +92,7 @@ async function youtubeRules(input: ConversationInput, notes: string[]): Promise<
     return actions;
   }
   const focusLabel = input.focusTerms[0] ?? null;
-  const since = new Date(Date.now() - 90 * 86_400_000).toISOString();
+  const since = new Date(Date.now() - MAX_AGE_DAYS * 86_400_000).toISOString();
 
   // Recent videos about the vocabulary, to comment on.
   for (const term of searchTerms(input)) {
@@ -186,19 +198,21 @@ async function blueskyRules(input: ConversationInput, notes: string[]): Promise<
   for (const term of searchTerms(input)) {
     const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent(`"${term}"`)}&sort=latest&limit=5`;
     const data = await getJson(url, notes, `Bluesky (${term})`);
-    const posts = (data as { posts?: BskyPost[] } | null)?.posts ?? [];
+    const posts = ((data as { posts?: BskyPost[] } | null)?.posts ?? [])
+      .filter((p) => isFreshEnough(p.record?.createdAt))
+      .sort((a, b) => Date.parse(b.record!.createdAt!) - Date.parse(a.record!.createdAt!));
     for (const p of posts.slice(0, 3)) {
       if (!p.uri || !p.author?.handle) continue;
       const rkey = p.uri.split("/").pop();
       const text = p.record?.text ?? "";
-      const own = input.socialProfiles.some((s) => s.includes(p.author?.handle ?? " "));
+      const own = input.socialProfiles.some((s) => s.includes(p.author?.handle ?? " "));
       if (own) continue;
       actions.push({
         fingerprint: `conv:bsky:${rkey}`,
         type: "SOCIAL",
         title: `Répondre au post de @${p.author.handle} sur ${quote(term)}`,
         detail:
-          `Il y a ${daysAgo(p.record?.createdAt ?? "")} jours : « ${text.slice(0, 140)}${text.length > 140 ? "…" : ""} ». ` +
+          `Il y a ${daysAgo(p.record!.createdAt!)} jours : « ${text.slice(0, 140)}${text.length > 140 ? "…" : ""} ». ` +
           (focusLabel && !matchesAny(text, [focusLabel])
             ? `Le post ne nomme pas ${quote(focusLabel)} : une réponse qui l'emploie, avec une précision utile, fait entrer le terme dans la conversation.`
             : `Une réponse utile depuis votre compte associe l'entité au sujet.`),
@@ -221,12 +235,14 @@ async function redditRules(input: ConversationInput, notes: string[]): Promise<G
   const actions: GeneratedAction[] = [];
   const focusLabel = input.focusTerms[0] ?? null;
   for (const term of searchTerms(input)) {
-    const url = `https://www.reddit.com/search.json?q=${encodeURIComponent(`"${term}"`)}&sort=new&t=year&limit=5`;
+    const url = `https://www.reddit.com/search.json?q=${encodeURIComponent(`"${term}"`)}&sort=new&t=month&limit=5`;
     const data = await getJson(url, notes, `Reddit (${term})`);
-    const children = ((data as { data?: { children?: RedditChild[] } } | null)?.data?.children ?? []).filter((c) => c.data?.id);
+    const children = ((data as { data?: { children?: RedditChild[] } } | null)?.data?.children ?? [])
+      .filter((c) => c.data?.id && c.data.created_utc && isFreshEnough(new Date(c.data.created_utc * 1000).toISOString()))
+      .sort((a, b) => (b.data!.created_utc ?? 0) - (a.data!.created_utc ?? 0));
     for (const c of children.slice(0, 3)) {
       const d = c.data!;
-      const age = d.created_utc ? Math.round((Date.now() / 1000 - d.created_utc) / 86_400) : 999;
+      const age = daysAgo(new Date(d.created_utc! * 1000).toISOString());
       actions.push({
         fingerprint: `conv:reddit:${d.id}`,
         type: "SOCIAL",
@@ -342,10 +358,12 @@ async function apifyRules(input: ConversationInput, notes: string[]): Promise<Ge
         notes.push(`Apify ${net.label} : ${err instanceof Error ? err.message.slice(0, 120) : "échec"}`);
         return;
       }
+      const posts = items
+        .map((raw) => net.map(raw))
+        .filter((p): p is Post & { date: string } => p !== null && Boolean(p.url) && isFreshEnough(p.date))
+        .sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
       let n = 0;
-      for (const raw of items) {
-        const p = net.map(raw);
-        if (!p || !p.url) continue;
+      for (const p of posts) {
         const own = input.socialProfiles.some((s) => p.author && s.toLowerCase().includes(p.author.toLowerCase()));
         if (own) continue;
         const id = p.url.replace(/[?#].*$/, "").split("/").filter(Boolean).slice(-2).join("-");
@@ -354,7 +372,7 @@ async function apifyRules(input: ConversationInput, notes: string[]): Promise<Ge
           type: "SOCIAL",
           title: `Commenter le post de ${p.author ? `@${p.author}` : "quelqu'un"} sur ${net.label} (${quote(term)})`,
           detail:
-            (p.date ? `Il y a ${daysAgo(p.date)} jours` : "Date inconnue") +
+            `Il y a ${daysAgo(p.date)} jours` +
             (p.likes !== null ? `, ${p.likes} réactions` : "") +
             ` : « ${p.text.slice(0, 140)}${p.text.length > 140 ? "…" : ""} ». ` +
             (focusLabel && !matchesAny(p.text, [focusLabel])
