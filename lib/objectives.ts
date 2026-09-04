@@ -321,7 +321,8 @@ function expectedCtr(position: number): number {
 /** 0..100, log-scaled on impressions so a 20-impression query on a small
  *  site still ranks above noise while a 2 000-impression one saturates. */
 function basePriority(impressions: number): number {
-  return Math.max(1, Math.min(100, Math.round(18 * Math.log(1 + impressions))));
+  // 12·ln: 10 impressions ≈ 29, 120 ≈ 58, 1 000 ≈ 83 — bonuses of 5-15 stay readable below 100.
+  return Math.max(1, Math.min(100, Math.round(12 * Math.log(1 + impressions))));
 }
 
 function clampPriority(p: number) {

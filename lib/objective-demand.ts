@@ -37,7 +37,7 @@ export type DemandReport = { actions: GeneratedAction[]; notes: string[] };
 const quote = (s: string) => `« ${s} »`;
 const fmtInt = (n: number) => n.toLocaleString("fr-FR");
 const clamp = (p: number) => Math.max(1, Math.min(100, Math.round(p)));
-const priorityOf = (impressions: number) => clamp(18 * Math.log(1 + impressions));
+const priorityOf = (impressions: number) => clamp(12 * Math.log(1 + impressions));
 
 function hostOf(input: string): string {
   const raw = input.trim();
