@@ -57,7 +57,13 @@ export async function PATCH(req: Request, { params }: Ctx) {
     const scopeChanged =
       data.siteIds !== undefined ||
       data.focusTerms !== undefined ||
-      data.rivalTerms !== undefined;
+      data.rivalTerms !== undefined ||
+      data.entityName !== undefined ||
+      data.wikiArticles !== undefined ||
+      data.targetMedia !== undefined ||
+      data.targetPartners !== undefined ||
+      data.guestSites !== undefined ||
+      data.socialProfiles !== undefined;
     const sync = scopeChanged ? await syncObjectiveActions(objectiveId) : null;
 
     return Response.json({ ...updated, sync });

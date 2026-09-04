@@ -9,6 +9,8 @@ const TYPES = new Set<ActionType>([
   "INTERNAL_LINK",
   "BACKLINK",
   "WIKIPEDIA",
+  "PRESS",
+  "PROFILE",
   "TECHNICAL",
   "OTHER",
 ]);

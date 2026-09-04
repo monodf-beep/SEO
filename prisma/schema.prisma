@@ -398,6 +398,12 @@ model Objective {
   siteIds     String[]        @default([])  // empty = every site of the user
   focusTerms  String[]        @default([])  // terms to defend, substring match on queries
   rivalTerms  String[]        @default([])  // competing terms to capture
+  entityName  String?                       // the organisation behind the goal, for Wikipedia / Wikidata / profiles
+  wikiArticles String[]       @default([])  // fr.wikipedia titles to watch
+  targetMedia String[]        @default([])  // media domains to pitch (tribunes, coverage)
+  targetPartners String[]     @default([])  // institutions and partners to get a link from
+  guestSites  String[]        @default([])  // sites where the user can publish articles themselves
+  socialProfiles String[]     @default([])  // public profile URLs (YouTube, Facebook, Instagram, LinkedIn…)
   targetShare Float?                        // target share of demand, 0..1
   deadline    DateTime?
   status      ObjectiveStatus @default(ACTIVE)
@@ -451,6 +457,8 @@ enum ActionType {
   INTERNAL_LINK    // link between two of the user's sites or pages
   BACKLINK         // outreach for an external link
   WIKIPEDIA        // Wikipedia / Wikidata work, always manual
+  PRESS            // tribune, interview, coverage in a target medium
+  PROFILE          // Google Business Profile, directories, social profiles, entity markup
   TECHNICAL        // crawl / vitals fix
   OTHER
 }

@@ -34,6 +34,12 @@ export type ObjectivePayload = {
   targetShare?: unknown;
   deadline?: unknown;
   status?: unknown;
+  entityName?: unknown;
+  wikiArticles?: unknown;
+  targetMedia?: unknown;
+  targetPartners?: unknown;
+  guestSites?: unknown;
+  socialProfiles?: unknown;
 };
 
 const STATUSES = new Set(["ACTIVE", "PAUSED", "DONE"]);
@@ -59,6 +65,12 @@ export async function parseObjectivePayload(
     targetShare?: number | null;
     deadline?: Date | null;
     status?: "ACTIVE" | "PAUSED" | "DONE";
+    entityName?: string | null;
+    wikiArticles?: string[];
+    targetMedia?: string[];
+    targetPartners?: string[];
+    guestSites?: string[];
+    socialProfiles?: string[];
   } = {};
 
   if (body.title !== undefined || !partial) {
@@ -134,6 +146,18 @@ export async function parseObjectivePayload(
       const d = new Date(String(body.deadline));
       if (Number.isNaN(d.getTime())) errors.push("Échéance invalide");
       else data.deadline = d;
+    }
+  }
+
+  if (body.entityName !== undefined) {
+    data.entityName =
+      typeof body.entityName === "string" && body.entityName.trim()
+        ? body.entityName.trim().slice(0, 200)
+        : null;
+  }
+  for (const key of ["wikiArticles", "targetMedia", "targetPartners", "guestSites", "socialProfiles"] as const) {
+    if (body[key] !== undefined) {
+      data[key] = parseTerms(body[key] as string | string[]).slice(0, 50);
     }
   }
 

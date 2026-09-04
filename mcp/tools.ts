@@ -114,7 +114,7 @@ export const tools = [
   {
     name: "sync_objective_actions",
     description:
-      "Recompute the rule-generated tasks of an objective from the latest GSC and crawl data. Statuses set by the user are preserved.",
+      "Recompute the rule-generated tasks of an objective from the latest GSC and crawl data, plus the notoriety checks (Wikipedia, Wikidata, media and partner links, guest sites, social profiles). Statuses set by the user are preserved.",
     schema: {
       objectiveId: z.string().describe("The objective ID"),
     },
@@ -126,7 +126,7 @@ export const tools = [
     schema: {
       objectiveId: z.string().describe("The objective ID"),
       title: z.string().describe("Short imperative title"),
-      type: z.string().optional().describe("CONTENT_NEW, CONTENT_UPDATE, TERMINOLOGY, INTERNAL_LINK, BACKLINK, WIKIPEDIA, TECHNICAL or OTHER"),
+      type: z.string().optional().describe("CONTENT_NEW, CONTENT_UPDATE, TERMINOLOGY, INTERNAL_LINK, BACKLINK, WIKIPEDIA, PRESS, PROFILE, TECHNICAL or OTHER"),
       detail: z.string().optional().describe("Why, with which sources, on which page"),
       siteId: z.string().optional().describe("Site the task targets"),
       url: z.string().optional().describe("Page the task targets"),

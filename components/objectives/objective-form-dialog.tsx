@@ -24,6 +24,12 @@ export type ObjectiveFormValues = {
   targetShare: string;
   deadline: string;
   status: "ACTIVE" | "PAUSED" | "DONE";
+  entityName: string;
+  wikiArticles: string;
+  targetMedia: string;
+  targetPartners: string;
+  guestSites: string;
+  socialProfiles: string;
 };
 
 const inputClass =
@@ -63,8 +69,24 @@ export function ObjectiveFormDialog({
     targetShare: "",
     deadline: "",
     status: "ACTIVE",
+    entityName: "",
+    wikiArticles: "",
+    targetMedia: "",
+    targetPartners: "",
+    guestSites: "",
+    socialProfiles: "",
     ...initial,
   });
+  const [showNotoriety, setShowNotoriety] = useState(
+    Boolean(
+      initial?.entityName ||
+        initial?.wikiArticles ||
+        initial?.targetMedia ||
+        initial?.targetPartners ||
+        initial?.guestSites ||
+        initial?.socialProfiles
+    )
+  );
 
   function set<K extends keyof ObjectiveFormValues>(key: K, value: ObjectiveFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -91,6 +113,12 @@ export function ObjectiveFormDialog({
         rivalTerms: values.rivalTerms,
         targetShare: values.targetShare === "" ? null : Number(values.targetShare),
         deadline: values.deadline || null,
+        entityName: values.entityName,
+        wikiArticles: values.wikiArticles,
+        targetMedia: values.targetMedia,
+        targetPartners: values.targetPartners,
+        guestSites: values.guestSites,
+        socialProfiles: values.socialProfiles,
         ...(mode === "edit" ? { status: values.status } : {}),
       };
       const res = await fetch(
@@ -247,6 +275,47 @@ export function ObjectiveFormDialog({
                   <option value="DONE">Atteint</option>
                 </select>
               </Field>
+            )}
+          </div>
+
+          <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+            <button
+              type="button"
+              onClick={() => setShowNotoriety((v) => !v)}
+              className="flex w-full items-center justify-between text-left text-sm font-medium text-foreground"
+              aria-expanded={showNotoriety}
+            >
+              <span>Notoriété hors site</span>
+              <span className="text-xs text-muted-foreground">{showNotoriety ? "Masquer" : "Afficher"}</span>
+            </button>
+            {showNotoriety && (
+              <div className="mt-3 space-y-4">
+                <Field label="Nom de l'entité" hint="Tel qu'il doit apparaître sur Wikipédia, Wikidata et la fiche Google">
+                  <input
+                    className={inputClass}
+                    value={values.entityName}
+                    onChange={(e) => set("entityName", e.target.value)}
+                    placeholder="Institut de la langue savoyarde"
+                  />
+                </Field>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Articles Wikipédia à surveiller" hint="Titres exacts de fr.wikipedia.org">
+                    <textarea className={textareaClass} rows={3} value={values.wikiArticles} onChange={(e) => set("wikiArticles", e.target.value)} placeholder={"Savoyard (langue)\nFrancoprovençal"} />
+                  </Field>
+                  <Field label="Profils sociaux" hint="URL publiques, une par ligne">
+                    <textarea className={textareaClass} rows={3} value={values.socialProfiles} onChange={(e) => set("socialProfiles", e.target.value)} placeholder={"https://www.youtube.com/@…\nhttps://www.facebook.com/…"} />
+                  </Field>
+                  <Field label="Médias à convaincre" hint="Domaines : tribunes, interviews, sujets">
+                    <textarea className={textareaClass} rows={3} value={values.targetMedia} onChange={(e) => set("targetMedia", e.target.value)} placeholder={"letemps.ch\nmediapart.fr"} />
+                  </Field>
+                  <Field label="Institutions et partenaires" hint="Domaines dont un lien compte">
+                    <textarea className={textareaClass} rows={3} value={values.targetPartners} onChange={(e) => set("targetPartners", e.target.value)} placeholder={"culture.gouv.fr\nuniv-smb.fr"} />
+                  </Field>
+                  <Field label="Sites où je peux publier" hint="Vos accès contributeur">
+                    <textarea className={textareaClass} rows={3} value={values.guestSites} onChange={(e) => set("guestSites", e.target.value)} placeholder={"mordus2savoie.com\nnosalpes.eu"} />
+                  </Field>
+                </div>
+              </div>
             )}
           </div>
 

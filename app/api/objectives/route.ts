@@ -53,6 +53,12 @@ export async function POST(req: Request) {
         rivalTerms: data.rivalTerms ?? [],
         targetShare: data.targetShare ?? null,
         deadline: data.deadline ?? null,
+        entityName: data.entityName ?? null,
+        wikiArticles: data.wikiArticles ?? [],
+        targetMedia: data.targetMedia ?? [],
+        targetPartners: data.targetPartners ?? [],
+        guestSites: data.guestSites ?? [],
+        socialProfiles: data.socialProfiles ?? [],
       },
     });
 

@@ -121,6 +121,12 @@ export default async function ObjectivePage({ params }: Props) {
                   objective.targetShare != null ? String(Math.round(objective.targetShare * 100)) : "",
                 deadline: objective.deadline ? objective.deadline.toISOString().slice(0, 10) : "",
                 status: objective.status,
+                entityName: objective.entityName ?? "",
+                wikiArticles: objective.wikiArticles.join("\n"),
+                targetMedia: objective.targetMedia.join("\n"),
+                targetPartners: objective.targetPartners.join("\n"),
+                guestSites: objective.guestSites.join("\n"),
+                socialProfiles: objective.socialProfiles.join("\n"),
               }}
             />
             <DeleteObjectiveButton objectiveId={objective.id} hasChildren={objective.children.length > 0} />
@@ -146,6 +152,24 @@ export default async function ObjectivePage({ params }: Props) {
           <span>
             <span className="font-medium text-foreground">Échéance :</span>{" "}
             {objective.deadline.toLocaleDateString("fr-FR")}
+          </span>
+        )}
+        {objective.entityName && (
+          <span>
+            <span className="font-medium text-foreground">Entité :</span> {objective.entityName}
+          </span>
+        )}
+        {(objective.targetMedia.length > 0 || objective.targetPartners.length > 0 || objective.guestSites.length > 0) && (
+          <span>
+            <span className="font-medium text-foreground">Hors site :</span>{" "}
+            {[
+              objective.targetMedia.length ? `${objective.targetMedia.length} média${objective.targetMedia.length > 1 ? "s" : ""}` : null,
+              objective.targetPartners.length ? `${objective.targetPartners.length} partenaire${objective.targetPartners.length > 1 ? "s" : ""}` : null,
+              objective.guestSites.length ? `${objective.guestSites.length} site${objective.guestSites.length > 1 ? "s" : ""} invité${objective.guestSites.length > 1 ? "s" : ""}` : null,
+              objective.wikiArticles.length ? `${objective.wikiArticles.length} article${objective.wikiArticles.length > 1 ? "s" : ""} Wikipédia` : null,
+            ]
+              .filter(Boolean)
+              .join(", ")}
           </span>
         )}
       </div>

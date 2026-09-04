@@ -469,6 +469,8 @@ const ACTION_TYPES = [
   "INTERNAL_LINK",
   "BACKLINK",
   "WIKIPEDIA",
+  "PRESS",
+  "PROFILE",
   "TECHNICAL",
   "OTHER",
 ] as const;

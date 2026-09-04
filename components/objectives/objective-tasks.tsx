@@ -25,6 +25,8 @@ const TYPE_ORDER: ActionType[] = [
   "INTERNAL_LINK",
   "BACKLINK",
   "WIKIPEDIA",
+  "PRESS",
+  "PROFILE",
   "TECHNICAL",
   "OTHER",
 ];
@@ -36,6 +38,8 @@ const typeTone: Record<ActionType, string> = {
   INTERNAL_LINK: "bg-warning/15 text-warning",
   BACKLINK: "bg-warning/15 text-warning",
   WIKIPEDIA: "bg-muted text-foreground",
+  PRESS: "bg-signal-muted text-signal",
+  PROFILE: "bg-info/15 text-info",
   TECHNICAL: "bg-danger/15 text-danger",
   OTHER: "bg-muted text-muted-foreground",
 };
@@ -111,6 +115,7 @@ export function ObjectiveTasks({
       if (body.sitesWithoutCrawl?.length) {
         parts.push(`sans crawl, règle terminologie aveugle : ${body.sitesWithoutCrawl.join(", ")}`);
       }
+      for (const n of body.notes ?? []) parts.push(n);
       setNotice(parts.join(" · "));
       router.refresh();
     } catch (err) {

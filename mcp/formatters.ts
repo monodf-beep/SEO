@@ -239,6 +239,7 @@ export function formatSyncResult(r: SyncResult): string {
   if (r.sitesWithoutCrawl?.length) {
     lines.push(`No completed crawl for: ${r.sitesWithoutCrawl.join(", ")} — the terminology rule cannot read those pages. Run a crawl first.`);
   }
+  for (const n of r.notes ?? []) lines.push(`Note: ${n}`);
   return lines.join("\n");
 }
 

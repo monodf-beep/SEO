@@ -253,6 +253,29 @@ WHERE u.email = 'ancienne.adresse@example.com'
 
 La commande refuse de supprimer un espace qui possède encore des sites.
 
+### Objectifs et notoriété hors site
+
+La page Objectifs mesure la part de demande d'un vocabulaire sur vos sites et en
+déduit des tâches. Un objectif peut aussi porter une entité (association,
+institut) et des cibles hors site ; à chaque recalcul, le moteur vérifie en
+lecture seule :
+
+- **Wikipédia** (API publique de fr.wikipedia.org) : les articles listés
+  existent-ils, citent-ils vos sites, nomment-ils votre terme ; le terme
+  existe-t-il comme titre ou redirection.
+- **Wikidata** : l'élément de l'article porte-t-il votre terme en alias, celui
+  de l'entité a-t-il votre site en site officiel.
+- **Médias, partenaires, sites invités** : avec DataForSEO configuré, les
+  domaines qui vous lient déjà sont écartés ; sinon toutes les cibles donnent
+  une tâche.
+- **Profils sociaux** : la carte publique du profil (titre, description Open
+  Graph) nomme-t-elle l'entité et le terme. Les plateformes qui exigent une
+  connexion donnent une tâche de vérification manuelle.
+
+Rien n'est écrit sur Wikipédia ni Wikidata : chaque tâche est une proposition
+à faire vous-même, en page de discussion et avec des sources, comme le
+demandent les règles de conflit d'intérêts des deux projets.
+
 ## 3. Démarrer
 
 ```bash
