@@ -239,6 +239,20 @@ Si un compte lié avait déjà son propre espace CrawlSEO (parce que vous vous
 avec tout leur historique. Les sites dont le domaine existe déjà chez vous sont
 laissés en place.
 
+Une fois l'ancien espace vidé, vous pouvez le supprimer : la connexion avec
+cette adresse Google ouvrira désormais l'espace auquel elle est liée, au lieu
+d'en recréer un vide.
+
+```bash
+cd /opt/crawlseo && set -a && . ./.env && set +a
+docker compose -f docker-compose.traefik.yml exec db psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -c "
+DELETE FROM \"User\" u
+WHERE u.email = 'ancienne.adresse@example.com'
+  AND NOT EXISTS (SELECT 1 FROM \"Site\" s WHERE s.\"userId\" = u.id);"
+```
+
+La commande refuse de supprimer un espace qui possède encore des sites.
+
 ## 3. Démarrer
 
 ```bash
@@ -268,7 +282,9 @@ Une fois ton compte créé, décommente cette ligne dans `.env` puis relance
 DISABLE_REGISTRATION=true
 ```
 
-Sans ça, n'importe qui atteignant l'URL peut se créer un compte.
+Sans ça, n'importe qui atteignant l'URL peut se créer un compte. Avec, seules
+les adresses Google qui ont déjà un espace, ou qui sont liées à un espace
+depuis Comptes Google, peuvent se connecter.
 
 ## Connecteur MCP distant (HTTP) — recommandé
 
