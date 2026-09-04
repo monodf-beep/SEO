@@ -10,7 +10,7 @@
  */
 
 import { backlinksProfile } from "@/lib/dataforseo/client";
-import { matchesAny, normalizeTerm } from "@/lib/objective-terms";
+import { matchesAny, normalizeTerm, type TermBucket } from "@/lib/objective-terms";
 import type { GeneratedAction, QueryAgg, ScopedSite } from "@/lib/objectives";
 
 const WP_API = "https://fr.wikipedia.org/w/api.php";
@@ -166,6 +166,18 @@ type WikiPage = {
   qid: string | null;
 };
 
+/** A pasted article URL is as good as a title. */
+function wikiTitle(raw: string): string {
+  const s = raw.trim();
+  const m = s.match(/wikipedia\.org\/wiki\/([^?#]+)/i);
+  if (!m) return s;
+  try {
+    return decodeURIComponent(m[1]).replace(/_/g, " ");
+  } catch {
+    return m[1].replace(/_/g, " ");
+  }
+}
+
 async function fetchWikiPage(title: string, notes: string[]): Promise<WikiPage | null> {
   const data = await getJson(
     WP_API,
@@ -185,6 +197,10 @@ async function fetchWikiPage(title: string, notes: string[]): Promise<WikiPage |
   );
   const page = (data as { query?: { pages?: Array<Record<string, unknown>> } } | null)?.query?.pages?.[0];
   if (!page) return null;
+  if (page.invalid) {
+    notes.push(`Wikipédia : titre ${quote(title)} invalide, vérification sautée`);
+    return null;
+  }
   const revisions = page.revisions as Array<{ slots?: { main?: { content?: string } } }> | undefined;
   const pageprops = page.pageprops as { wikibase_item?: string } | undefined;
   const extlinks = ((page.extlinks as Array<{ url?: string }> | undefined) ?? []).map((l) => l.url ?? "");
@@ -264,7 +280,7 @@ async function wikiRules(input: NotorietyInput, hub: ScopedSite | null, notes: s
 
   // Titles to examine: the configured ones, plus the entity's own article
   // when it is not already listed.
-  const titles = [...objective.wikiArticles];
+  const titles = objective.wikiArticles.map(wikiTitle).filter(Boolean);
   if (entity && !titles.some((t) => normalizeTerm(t) === normalizeTerm(entity))) titles.push(entity);
 
   const pages: (WikiPage | null)[] = [];
@@ -437,6 +453,11 @@ async function wikiRules(input: NotorietyInput, hub: ScopedSite | null, notes: s
     }
   }
 
+  // Silence must be readable as "checked, fine", not "did not run".
+  if (actions.length === 0 && titles.length > 0) {
+    notes.push(`Wikipédia/Wikidata : ${titles.map(quote).join(", ")} vérifié(s), rien à proposer`);
+  }
+
   return actions;
 }
 
@@ -485,20 +506,67 @@ function blogHint(domain: string): string {
  * deserve an article, rival vocabulary first, with the page to link back
  * to. Media blogs come first because their authority is higher.
  */
+type Topic = {
+  query: string;
+  siteId: string | null;
+  impressions: number;
+  position: number | null;
+  page: string | null;
+  bucket: TermBucket;
+  /** one of the user's pages already sits in the top 10 for this query */
+  ranked: boolean;
+};
+
+/**
+ * Unranked demand first; then, because an article on an authority domain
+ * buys notoriety and a link whatever the ranking, the best-searched terms
+ * the user already ranks for; and, with no Search Console data at all, the
+ * defended term itself. A configured outlet always gets something to write.
+ */
+function topicsForOutlets(queries: QueryAgg[], focusTerms: string[], hub: ScopedSite | null, capacity: number): Topic[] {
+  const out: Topic[] = topicsForGuestArticles(queries).map((t) => ({ ...t, ranked: false }));
+  if (out.length >= capacity) return out;
+
+  const taken = new Set(out.map((t) => normalizeTerm(t.query)));
+  const byQuery = new Map<string, QueryAgg[]>();
+  for (const q of queries) {
+    if (q.bucket === "other" || taken.has(normalizeTerm(q.query))) continue;
+    const list = byQuery.get(q.query) ?? [];
+    list.push(q);
+    byQuery.set(q.query, list);
+  }
+  const ranked: Topic[] = [...byQuery.values()]
+    .map((list) => {
+      const best = [...list].sort((a, b) => a.position - b.position)[0];
+      return { ...best, impressions: list.reduce((s, q) => s + q.impressions, 0), ranked: true };
+    })
+    .filter((t) => t.impressions >= 5)
+    .sort((a, b) => {
+      if (a.bucket !== b.bucket) return a.bucket === "rival" ? -1 : 1;
+      return b.impressions - a.impressions;
+    });
+  out.push(...ranked.slice(0, capacity - out.length));
+
+  if (out.length === 0 && focusTerms[0]) {
+    out.push({ query: focusTerms[0], siteId: hub?.id ?? null, impressions: 0, position: null, page: null, bucket: "focus", ranked: true });
+  }
+  return out;
+}
+
 function publishingRules(input: NotorietyInput, refs: Set<string> | null, hub: ScopedSite | null): GeneratedAction[] {
   const { objective, queries } = input;
   const actions: GeneratedAction[] = [];
   const hubLabel = hub ? hostOf(hub.domain) : "votre site pivot";
   const focusLabel = objective.focusTerms[0] ?? "votre terme";
-  const topics = topicsForGuestArticles(queries);
   const outlets = [
     ...objective.mediaBlogs.map((d) => ({ domain: hostOf(d), media: true })),
     ...objective.guestSites.map((d) => ({ domain: hostOf(d), media: false })),
   ];
+  const topics = topicsForOutlets(queries, objective.focusTerms, hub, outlets.length * 2);
   // Round robin, two topics per outlet at most, so a short topic list is
   // shared rather than swallowed by the first outlet.
   const perOutlet = new Map<string, number>();
-  const assignments: Array<{ outlet: (typeof outlets)[number]; t: QueryAgg }> = [];
+  const assignments: Array<{ outlet: (typeof outlets)[number]; t: Topic }> = [];
   let idx = 0;
   for (const t of topics) {
     if (outlets.length === 0) break;
@@ -516,24 +584,29 @@ function publishingRules(input: NotorietyInput, refs: Set<string> | null, hub: S
   for (const { outlet, t } of assignments) {
     const { domain, media } = outlet;
     const already = refs?.has(domain);
-    {
-      const site = input.sites.find((s) => s.id === t.siteId);
-      actions.push({
-        fingerprint: `${media ? "mediablog" : "guest"}:${domain}:${normalizeTerm(t.query)}`,
-        type: media ? "PRESS" : "CONTENT_NEW",
-        title: `${media ? "Publier un billet sur" : "Écrire sur"} ${domain} : ${quote(t.query)}`,
-        detail:
-          `${fmtInt(t.impressions)} impressions sur 28 j et aucune de vos pages dans le top 10 (meilleure position ${t.position.toFixed(1)}${site ? ` sur ${hostOf(site.domain)}` : ""}). ` +
-          (media ? `${blogHint(domain)} ` : "") +
-          `Un article de fond qui nomme ${quote(focusLabel)} dès le titre et renvoie vers ${t.page ?? `https://${hubLabel}/`}.` +
-          (already ? " Ce domaine vous lie déjà : variez les ancres." : ""),
-        query: t.query,
-        url: t.page ?? undefined,
-        siteId: t.siteId,
-        priority: clamp(18 * Math.log(1 + t.impressions) + (media ? 10 : 5)),
-        source: media ? "rule:media_blog" : "rule:guest_article",
-      });
-    }
+    const site = input.sites.find((s) => s.id === t.siteId);
+    const where = site ? ` sur ${hostOf(site.domain)}` : "";
+    const why =
+      t.position === null
+        ? `Aucune requête Search Console exploitable sur 28 j : partez du terme lui-même. `
+        : t.ranked
+          ? `${fmtInt(t.impressions)} impressions sur 28 j, vous êtes déjà en position ${t.position.toFixed(1)}${where} : ici l'article vise la notoriété et un lien depuis un domaine d'autorité, pas la place dans Google. `
+          : `${fmtInt(t.impressions)} impressions sur 28 j et aucune de vos pages dans le top 10 (meilleure position ${t.position.toFixed(1)}${where}). `;
+    actions.push({
+      fingerprint: `${media ? "mediablog" : "guest"}:${domain}:${normalizeTerm(t.query)}`,
+      type: media ? "PRESS" : "CONTENT_NEW",
+      title: `${media ? "Publier un billet sur" : "Écrire sur"} ${domain} : ${quote(t.query)}`,
+      detail:
+        why +
+        (media ? `${blogHint(domain)} ` : "") +
+        `Un article de fond qui nomme ${quote(focusLabel)} dès le titre et renvoie vers ${t.page ?? `https://${hubLabel}/`}.` +
+        (already ? " Ce domaine vous lie déjà : variez les ancres." : ""),
+      query: t.query,
+      url: t.page ?? undefined,
+      siteId: t.siteId ?? undefined,
+      priority: clamp(Math.max(20, (t.ranked ? 10 : 18) * Math.log(1 + t.impressions) + (media ? 10 : 5))),
+      source: media ? "rule:media_blog" : "rule:guest_article",
+    });
   }
   return actions;
 }

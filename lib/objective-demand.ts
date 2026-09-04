@@ -231,7 +231,10 @@ async function serpSocialRules(input: DemandInput, notes: string[]): Promise<Gen
 
 async function linkGapRules(input: DemandInput, notes: string[]): Promise<GeneratedAction[]> {
   const actions: GeneratedAction[] = [];
-  if (input.rivalSites.length === 0) return actions;
+  if (input.rivalSites.length === 0) {
+    notes.push("Aucun site concurrent renseigné dans l'objectif : l'écart de liens (backlinks à aller chercher) n'a pas été calculé");
+    return actions;
+  }
   if (input.refs === null) {
     notes.push("DataForSEO n'est pas configuré : l'écart de liens face aux sites concurrents n'a pas été calculé");
     return actions;
@@ -304,6 +307,9 @@ function directoryRules(input: DemandInput): GeneratedAction[] {
 
 export async function generateDemandActions(input: DemandInput): Promise<DemandReport> {
   const notes: string[] = [];
+  if (input.directories.length === 0) {
+    notes.push("Aucun annuaire renseigné dans l'objectif : pas de fiche à créer");
+  }
   const [serp, gap] = await Promise.all([serpSocialRules(input, notes), linkGapRules(input, notes)]);
   return {
     actions: [...questionRules(input), ...risingDemandRules(input), ...serp, ...gap, ...directoryRules(input)],

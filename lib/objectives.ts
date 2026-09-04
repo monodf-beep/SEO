@@ -581,6 +581,12 @@ export async function generateActions(
     homepageSchema.set(site.id, home ? home.hasSchema : null);
   }
   const notes: string[] = [];
+  if (hasTerms) {
+    const quiet = sites.filter((s) => !inScope.some((a) => a.siteId === s.id)).map((s) => s.domain);
+    if (quiet.length > 0) {
+      notes.push(`${quiet.join(", ")} : aucune requête Search Console contenant vos termes sur ${WINDOW_DAYS} j, rien à proposer pour ce(s) site(s)`);
+    }
+  }
   const hub = pickHub(sites, inScope, objective.focusTerms);
   const wantsRefs =
     (objective.mediaBlogs?.length ?? 0) +
