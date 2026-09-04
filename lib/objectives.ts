@@ -587,6 +587,17 @@ export async function generateActions(
     if (quiet.length > 0) {
       notes.push(`${quiet.join(", ")} : aucune requête Search Console contenant vos termes sur ${WINDOW_DAYS} j, rien à proposer pour ce(s) site(s)`);
     }
+    // In scope but under every rule's threshold: say so, or the site looks ignored.
+    const faint = sites
+      .filter((s) => !quiet.includes(s.domain) && !inScope.some((a) => a.siteId === s.id && a.impressions >= 10))
+      .map((s) => {
+        const n = inScope.filter((a) => a.siteId === s.id).length;
+        const impr = inScope.filter((a) => a.siteId === s.id).reduce((t, a) => t + a.impressions, 0);
+        return `${s.domain} (${n} requête(s), ${impr} impression(s))`;
+      });
+    if (faint.length > 0) {
+      notes.push(`${faint.join(", ")} : trop peu de trafic sur vos termes pour déclencher une règle (10 impressions par requête au minimum)`);
+    }
   }
   const hub = pickHub(sites, inScope, objective.focusTerms);
   const wantsRefs =
