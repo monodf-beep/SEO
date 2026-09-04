@@ -27,6 +27,7 @@ const TYPE_ORDER: ActionType[] = [
   "WIKIPEDIA",
   "PRESS",
   "PROFILE",
+  "SOCIAL",
   "TECHNICAL",
   "OTHER",
 ];
@@ -40,6 +41,7 @@ const typeTone: Record<ActionType, string> = {
   WIKIPEDIA: "bg-muted text-foreground",
   PRESS: "bg-signal-muted text-signal",
   PROFILE: "bg-info/15 text-info",
+  SOCIAL: "bg-primary/15 text-primary",
   TECHNICAL: "bg-danger/15 text-danger",
   OTHER: "bg-muted text-muted-foreground",
 };

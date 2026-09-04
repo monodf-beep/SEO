@@ -19,6 +19,8 @@ export type ObjectiveTemplateNode = {
   mediaBlogs?: string[];
   guestSites?: string[];
   socialProfiles?: string[];
+  directories?: string[];
+  rivalSites?: string[];
   children?: ObjectiveTemplateNode[];
 };
 

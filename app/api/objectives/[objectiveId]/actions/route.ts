@@ -11,6 +11,7 @@ const TYPES = new Set<ActionType>([
   "WIKIPEDIA",
   "PRESS",
   "PROFILE",
+  "SOCIAL",
   "TECHNICAL",
   "OTHER",
 ]);

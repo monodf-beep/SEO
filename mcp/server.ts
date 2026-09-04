@@ -471,6 +471,7 @@ const ACTION_TYPES = [
   "WIKIPEDIA",
   "PRESS",
   "PROFILE",
+  "SOCIAL",
   "TECHNICAL",
   "OTHER",
 ] as const;

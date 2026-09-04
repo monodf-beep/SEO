@@ -38,6 +38,9 @@ export type NotorietyInput = {
   queries: QueryAgg[];
   /** homepage has JSON-LD/schema per site id, null when the site has no crawl */
   homepageSchema: Map<string, boolean | null>;
+  /** referring domains of the sites in scope, null when DataForSEO is not configured */
+  refs: Set<string> | null;
+  hub: ScopedSite | null;
 };
 
 export type NotorietyReport = { actions: GeneratedAction[]; notes: string[] };
@@ -111,7 +114,7 @@ async function getJson(url: string, params: Record<string, string>, notes: strin
 
 /** The site that collects the most impressions on the defended vocabulary:
  *  the natural target of every external link. */
-function pickHub(sites: ScopedSite[], queries: QueryAgg[], focusTerms: string[]): ScopedSite | null {
+export function pickHub(sites: ScopedSite[], queries: QueryAgg[], focusTerms: string[]): ScopedSite | null {
   if (sites.length === 0) return null;
   // A domain that literally carries the defended vocabulary is the entity's
   // home, whatever the traffic says.
@@ -441,15 +444,18 @@ async function wikiRules(input: NotorietyInput, hub: ScopedSite | null, notes: s
 // Links from media, partners, and the user's own guest sites
 // ---------------------------------------------------------------------------
 
-/** Referring domains of every site in scope, when DataForSEO is configured. */
-async function referringDomains(input: NotorietyInput, notes: string[]): Promise<Set<string> | null> {
-  const wanted = [...input.objective.mediaBlogs, ...input.objective.guestSites];
-  if (wanted.length === 0) return null;
+/** Referring domains of every site in scope, null when DataForSEO is not
+ *  configured. Shared by the notoriety and demand rules. */
+export async function referringDomainsOfSites(
+  userId: string,
+  sites: ScopedSite[],
+  notes: string[]
+): Promise<Set<string> | null> {
   const refs = new Set<string>();
   let configured = false;
-  for (const site of input.sites) {
+  for (const site of sites) {
     try {
-      const rows = await backlinksProfile(input.objective.userId, site.domain, 1000, 0);
+      const rows = await backlinksProfile(userId, site.domain, 1000, 0);
       if (rows === null) continue;
       configured = true;
       for (const r of rows) if (r.referringDomain) refs.add(hostOf(r.referringDomain));
@@ -458,7 +464,7 @@ async function referringDomains(input: NotorietyInput, notes: string[]): Promise
     }
   }
   if (!configured) {
-    notes.push("DataForSEO n'est pas configuré : les liens déjà obtenus depuis les blogs de médias et les sites où vous publiez n'ont pas pu être vérifiés");
+    notes.push("DataForSEO n'est pas configuré : les liens déjà obtenus (blogs de médias, sites où vous publiez, annuaires) n'ont pas pu être vérifiés");
     return null;
   }
   return refs;
@@ -668,12 +674,9 @@ export async function generateNotorietyActions(input: NotorietyInput): Promise<N
     o.socialProfiles.length;
   if (!hasAnything) return { actions: [], notes };
 
-  const hub = pickHub(input.sites, input.queries, o.focusTerms);
-  const [wiki, refs, presence] = await Promise.all([
-    wikiRules(input, hub, notes),
-    referringDomains(input, notes),
-    presenceRules(input, hub, notes),
-  ]);
+  const hub = input.hub;
+  const refs = input.refs;
+  const [wiki, presence] = await Promise.all([wikiRules(input, hub, notes), presenceRules(input, hub, notes)]);
   const publishing = publishingRules(input, refs, hub);
 
   return { actions: [...wiki, ...publishing, ...presence], notes };

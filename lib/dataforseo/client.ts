@@ -234,3 +234,55 @@ export async function backlinksProfile(
     lastSeen: item.last_seen ?? null,
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Referring domains of any target (link gap analysis)
+// ---------------------------------------------------------------------------
+
+export type ReferringDomainItem = { domain: string; rank: number; backlinks: number };
+
+export async function referringDomainsOf(
+  userId: string,
+  target: string,
+  limit = 100
+): Promise<ReferringDomainItem[] | null> {
+  const creds = await getCredentials(userId);
+  if (!creds) return null;
+
+  type Resp = { tasks?: Array<{ result?: Array<{ items?: Array<{ domain?: string; rank?: number; backlinks?: number }> }> }> };
+  const data = await dataforseoPost<Resp>(creds.login, creds.password, "/backlinks/referring_domains/live", [
+    { target, limit, order_by: ["rank,desc"], exclude_internal_backlinks: true },
+  ]);
+  const items = data?.tasks?.[0]?.result?.[0]?.items;
+  if (!Array.isArray(items)) return [];
+  return items.map((item) => ({
+    domain: item.domain ?? "",
+    rank: item.rank ?? 0,
+    backlinks: item.backlinks ?? 0,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// SERP composition: which result types Google shows for a keyword
+// ---------------------------------------------------------------------------
+
+/** Item types of the first results page (organic, video, people_also_ask,
+ *  discussions_and_forums…). Location and language come from
+ *  DATAFORSEO_LOCATION_CODE / DATAFORSEO_LANGUAGE_CODE, France and French
+ *  by default. */
+export async function serpItemTypes(userId: string, keyword: string): Promise<string[] | null> {
+  const creds = await getCredentials(userId);
+  if (!creds) return null;
+
+  const locationCode = Number(process.env.DATAFORSEO_LOCATION_CODE) || 2250;
+  const languageCode = process.env.DATAFORSEO_LANGUAGE_CODE || "fr";
+  type Resp = { tasks?: Array<{ result?: Array<{ item_types?: string[]; items?: Array<{ type?: string }> }> }> };
+  const data = await dataforseoPost<Resp>(creds.login, creds.password, "/serp/google/organic/live/advanced", [
+    { keyword, location_code: locationCode, language_code: languageCode, device: "desktop", depth: 10 },
+  ]);
+  const result = data?.tasks?.[0]?.result?.[0];
+  if (!result) return [];
+  if (Array.isArray(result.item_types)) return result.item_types;
+  const items = Array.isArray(result.items) ? result.items : [];
+  return [...new Set(items.map((i) => String(i.type ?? "")))].filter(Boolean);
+}

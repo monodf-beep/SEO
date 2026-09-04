@@ -403,6 +403,8 @@ model Objective {
   mediaBlogs  String[]        @default([])  // media with a contributor space the user can publish in
   guestSites  String[]        @default([])  // sites where the user can publish articles themselves
   socialProfiles String[]     @default([])  // public profile URLs (YouTube, Facebook, Instagram, LinkedIn…)
+  directories String[]        @default([])  // directories and listings worth an entry
+  rivalSites  String[]        @default([])  // sites that own the competing vocabulary, for link gap analysis
   targetShare Float?                        // target share of demand, 0..1
   deadline    DateTime?
   status      ObjectiveStatus @default(ACTIVE)
@@ -458,6 +460,7 @@ enum ActionType {
   WIKIPEDIA        // Wikipedia / Wikidata work, always manual
   PRESS            // tribune, interview, coverage in a target medium
   PROFILE          // Google Business Profile, directories, social profiles, entity markup
+  SOCIAL           // a post, video or comment on a social network
   TECHNICAL        // crawl / vitals fix
   OTHER
 }

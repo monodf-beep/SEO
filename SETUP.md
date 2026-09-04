@@ -269,6 +269,27 @@ lecture seule :
   sujets à forte demande où aucune de vos pages n'est dans le top 10, avec la
   page à lier ; avec DataForSEO configuré, les domaines qui vous lient déjà
   sont signalés.
+- **Questions** : les requêtes Search Console formulées en question (comment,
+  pourquoi, que veut dire…) qu'aucune de vos pages ne traite en tête donnent
+  une tâche « répondre à la question ». Gratuit, sans clé.
+- **Réseaux sociaux** : un post est proposé quand la demande d'un sujet monte
+  d'au moins 25 % d'une période à l'autre, et quand la page de résultats
+  Google d'une requête affiche des vidéos, des forums ou des posts (lecture
+  de la SERP via DataForSEO, environ 0,002 € par requête, huit requêtes par
+  recalcul).
+- **Conversations à rejoindre** : vidéos YouTube récentes sur le sujet
+  (`YOUTUBE_API_KEY` dans `.env`, clé gratuite depuis la Google Cloud
+  Console, API « YouTube Data v3 »), posts Bluesky (sans clé) et fils Reddit
+  (Reddit refuse souvent les serveurs : la note du recalcul le dit). Avec une
+  URL de chaîne YouTube dans les profils sociaux, la description de la chaîne
+  et les titres des dix dernières vidéos sont vérifiés. Facebook, Instagram et
+  LinkedIn ne se lisent pas sans connexion et l'interdisent : ils ne sont pas
+  lus.
+- **Sites concurrents** : avec DataForSEO, les domaines qui lient ces sites
+  mais aucun des vôtres deviennent des tâches « obtenir un lien » (environ
+  0,02 € par site concurrent et par recalcul).
+- **Annuaires et listes** : une tâche d'inscription par annuaire où l'entité
+  ne figure pas encore.
 - **Profils sociaux** : la carte publique du profil (titre, description Open
   Graph) nomme-t-elle l'entité et le terme. Les plateformes qui exigent une
   connexion donnent une tâche de vérification manuelle.
@@ -295,6 +316,16 @@ Pour épingler une version au lieu de suivre `latest`, ajouter dans `.env` :
 
 ```
 CRAWLSEO_IMAGE=ghcr.io/crawlseo/crawlseo:1.2.3
+```
+
+### Clés optionnelles dans `.env`
+
+```
+# Vidéos YouTube sur le sujet et vérification de votre chaîne
+YOUTUBE_API_KEY=
+# Pays et langue des pages de résultats lues via DataForSEO (France, français)
+DATAFORSEO_LOCATION_CODE=2250
+DATAFORSEO_LANGUAGE_CODE=fr
 ```
 
 ## 4. Fermer les inscriptions

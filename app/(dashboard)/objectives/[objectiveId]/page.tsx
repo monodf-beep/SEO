@@ -126,6 +126,8 @@ export default async function ObjectivePage({ params }: Props) {
                 mediaBlogs: objective.mediaBlogs.join("\n"),
                 guestSites: objective.guestSites.join("\n"),
                 socialProfiles: objective.socialProfiles.join("\n"),
+                directories: objective.directories.join("\n"),
+                rivalSites: objective.rivalSites.join("\n"),
               }}
             />
             <DeleteObjectiveButton objectiveId={objective.id} hasChildren={objective.children.length > 0} />
@@ -158,13 +160,15 @@ export default async function ObjectivePage({ params }: Props) {
             <span className="font-medium text-foreground">Entité :</span> {objective.entityName}
           </span>
         )}
-        {(objective.mediaBlogs.length > 0 || objective.guestSites.length > 0 || objective.wikiArticles.length > 0) && (
+        {(objective.mediaBlogs.length > 0 || objective.guestSites.length > 0 || objective.wikiArticles.length > 0 || objective.rivalSites.length > 0 || objective.directories.length > 0) && (
           <span>
             <span className="font-medium text-foreground">Hors site :</span>{" "}
             {[
               objective.mediaBlogs.length ? `${objective.mediaBlogs.length} blog${objective.mediaBlogs.length > 1 ? "s" : ""} de média` : null,
               objective.guestSites.length ? `${objective.guestSites.length} site${objective.guestSites.length > 1 ? "s" : ""} où publier` : null,
               objective.wikiArticles.length ? `${objective.wikiArticles.length} article${objective.wikiArticles.length > 1 ? "s" : ""} Wikipédia` : null,
+              objective.rivalSites.length ? `${objective.rivalSites.length} site${objective.rivalSites.length > 1 ? "s" : ""} concurrent${objective.rivalSites.length > 1 ? "s" : ""}` : null,
+              objective.directories.length ? `${objective.directories.length} annuaire${objective.directories.length > 1 ? "s" : ""}` : null,
             ]
               .filter(Boolean)
               .join(", ")}

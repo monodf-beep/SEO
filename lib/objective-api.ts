@@ -39,6 +39,8 @@ export type ObjectivePayload = {
   mediaBlogs?: unknown;
   guestSites?: unknown;
   socialProfiles?: unknown;
+  directories?: unknown;
+  rivalSites?: unknown;
 };
 
 const STATUSES = new Set(["ACTIVE", "PAUSED", "DONE"]);
@@ -69,6 +71,8 @@ export async function parseObjectivePayload(
     mediaBlogs?: string[];
     guestSites?: string[];
     socialProfiles?: string[];
+    directories?: string[];
+    rivalSites?: string[];
   } = {};
 
   if (body.title !== undefined || !partial) {
@@ -153,7 +157,7 @@ export async function parseObjectivePayload(
         ? body.entityName.trim().slice(0, 200)
         : null;
   }
-  for (const key of ["wikiArticles", "mediaBlogs", "guestSites", "socialProfiles"] as const) {
+  for (const key of ["wikiArticles", "mediaBlogs", "guestSites", "socialProfiles", "directories", "rivalSites"] as const) {
     if (body[key] !== undefined) {
       data[key] = parseTerms(body[key] as string | string[]).slice(0, 50);
     }

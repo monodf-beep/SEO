@@ -29,6 +29,8 @@ export type ObjectiveFormValues = {
   mediaBlogs: string;
   guestSites: string;
   socialProfiles: string;
+  directories: string;
+  rivalSites: string;
 };
 
 const inputClass =
@@ -73,6 +75,8 @@ export function ObjectiveFormDialog({
     mediaBlogs: "",
     guestSites: "",
     socialProfiles: "",
+    directories: "",
+    rivalSites: "",
     ...initial,
   });
   const [showNotoriety, setShowNotoriety] = useState(
@@ -81,7 +85,9 @@ export function ObjectiveFormDialog({
         initial?.wikiArticles ||
         initial?.mediaBlogs ||
         initial?.guestSites ||
-        initial?.socialProfiles
+        initial?.socialProfiles ||
+        initial?.directories ||
+        initial?.rivalSites
     )
   );
 
@@ -115,6 +121,8 @@ export function ObjectiveFormDialog({
         mediaBlogs: values.mediaBlogs,
         guestSites: values.guestSites,
         socialProfiles: values.socialProfiles,
+        directories: values.directories,
+        rivalSites: values.rivalSites,
         ...(mode === "edit" ? { status: values.status } : {}),
       };
       const res = await fetch(
@@ -306,6 +314,12 @@ export function ObjectiveFormDialog({
                   </Field>
                   <Field label="Sites où je peux publier" hint="Vos accès contributeur">
                     <textarea className={textareaClass} rows={3} value={values.guestSites} onChange={(e) => set("guestSites", e.target.value)} placeholder={"mordus2savoie.com\nnosalpes.eu"} />
+                  </Field>
+                  <Field label="Sites concurrents" hint="Ceux qui portent le vocabulaire concurrent : écart de liens (DataForSEO)">
+                    <textarea className={textareaClass} rows={3} value={values.rivalSites} onChange={(e) => set("rivalSites", e.target.value)} placeholder={"arpitania.eu"} />
+                  </Field>
+                  <Field label="Annuaires et listes" hint="Où l'entité devrait figurer">
+                    <textarea className={textareaClass} rows={3} value={values.directories} onChange={(e) => set("directories", e.target.value)} placeholder={"annuaire-associations.fr"} />
                   </Field>
                 </div>
               </div>

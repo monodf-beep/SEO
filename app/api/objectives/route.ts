@@ -58,6 +58,8 @@ export async function POST(req: Request) {
         mediaBlogs: data.mediaBlogs ?? [],
         guestSites: data.guestSites ?? [],
         socialProfiles: data.socialProfiles ?? [],
+        directories: data.directories ?? [],
+        rivalSites: data.rivalSites ?? [],
       },
     });
 
