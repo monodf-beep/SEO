@@ -6,14 +6,9 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { SidebarNav } from "@/components/layout/sidebar-nav";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { UserMenu } from "@/components/layout/user-menu";
 import { SiteSwitcher } from "@/components/sites/site-switcher";
-import {
-  PanelLeftClose,
-  PanelLeftOpen,
-  Menu,
-  X,
-  LogOut,
-} from "lucide-react";
+import { PanelLeftClose, PanelLeftOpen, Menu, X } from "lucide-react";
 
 type AppShellProps = {
   email?: string | null;
@@ -30,12 +25,7 @@ export function AppShell({
   children,
   sites,
 }: AppShellProps) {
-  const displayName = name || email?.split("@")[0] || "Utilisateur";
-  const initial = displayName.charAt(0).toUpperCase();
   const pathname = usePathname();
-
-  const [imgError, setImgError] = useState(false);
-  const showImage = image && !imgError;
 
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -60,10 +50,10 @@ export function AppShell({
   const sidebarContent = (
     <div className="flex h-full flex-col">
       {/* Logo / brand */}
-      <div className={cn("flex items-center gap-2.5 px-4 py-5", collapsed && "justify-center px-2")}>
+      <div className={cn("flex items-center gap-2.5 px-4 py-3", collapsed && "justify-center px-2")}>
         <Link
           href="/dashboard"
-          className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm"
+          className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm"
         >
           <svg viewBox="0 0 24 24" className="size-4" fill="none" aria-hidden>
             <path
@@ -76,18 +66,15 @@ export function AppShell({
           </svg>
         </Link>
         {!collapsed && (
-          <div>
-            <p className="text-[15px] font-semibold tracking-tight text-foreground">
-              CrawlSEO
-            </p>
-            <p className="text-[11px] text-muted-foreground">Pilotage SEO</p>
-          </div>
+          <p className="text-[15px] font-semibold tracking-tight text-foreground">
+            CrawlSEO
+          </p>
         )}
       </div>
 
       {/* Site switcher */}
       {sites.length > 0 && !collapsed && (
-        <div className="px-3 pb-4">
+        <div className="px-3 pb-3">
           <SiteSwitcher sites={sites} />
         </div>
       )}
@@ -96,84 +83,27 @@ export function AppShell({
       <SidebarNav sites={sites} collapsed={collapsed} />
 
       {/* Bottom section */}
-      <div className="mt-auto space-y-3 px-3 pb-4 pt-4">
+      <div className="mt-auto space-y-1 border-t border-sidebar-border px-2 pb-3 pt-2">
+        <UserMenu email={email} name={name} image={image} collapsed={collapsed} />
+
         {/* Collapse toggle (desktop only) */}
         <button
           type="button"
           onClick={toggleCollapsed}
-          className="hidden w-full items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground md:flex"
+          className={cn(
+            "hidden w-full items-center gap-2.5 rounded-xl text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground md:flex",
+            collapsed ? "justify-center p-1.5" : "px-2 py-1.5"
+          )}
         >
           {collapsed ? (
             <PanelLeftOpen className="size-4" />
           ) : (
             <>
               <PanelLeftClose className="size-4" />
-              <span>Replier</span>
+              <span>Replier le menu</span>
             </>
           )}
         </button>
-
-        {/* User card */}
-        {!collapsed && (
-          <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
-            <div className="mb-3 flex items-center gap-2.5">
-              {showImage ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={image}
-                  alt={displayName}
-                  className="size-9 rounded-full object-cover"
-                  onError={() => setImgError(true)}
-                />
-              ) : (
-                <div className="flex size-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-400 text-sm font-semibold text-primary-foreground">
-                  {initial}
-                </div>
-              )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium text-foreground">
-                  {displayName}
-                </p>
-                <p className="truncate text-[11px] text-muted-foreground">
-                  {email}
-                </p>
-              </div>
-            </div>
-
-            <div className="mb-3 flex items-center justify-between gap-2 px-0.5">
-              <span className="text-[11px] text-muted-foreground">Thème</span>
-              <ThemeToggle />
-            </div>
-
-            <a
-              href="/api/auth/signout"
-              className="flex w-full items-center justify-center gap-2 rounded-full border border-border bg-secondary/60 px-4 py-2 text-sm font-medium text-foreground transition hover:bg-secondary"
-            >
-              <LogOut className="size-3.5" />
-              Déconnexion
-            </a>
-          </div>
-        )}
-
-        {/* Collapsed: just avatar + theme */}
-        {collapsed && (
-          <div className="flex flex-col items-center gap-2">
-            <ThemeToggle />
-            {showImage ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={image}
-                alt={displayName}
-                className="size-8 rounded-full object-cover"
-                onError={() => setImgError(true)}
-              />
-            ) : (
-              <div className="flex size-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-blue-400 text-xs font-semibold text-primary-foreground">
-                {initial}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
