@@ -61,7 +61,12 @@ export function SiteSwitcher({ sites }: { sites: Site[] }) {
       </p>
       <Select value={selected} onValueChange={handleSiteChange}>
         <SelectTrigger className="w-full border-border/70 bg-panel">
-          <SelectValue />
+          {/* Items are only mounted while the list is open, so without this
+              the trigger falls back to the raw site id on pages outside
+              /sites (objectives, account settings). */}
+          <SelectValue>
+            {(value: string | null) => sites.find((s) => s.id === value)?.domain ?? value}
+          </SelectValue>
         </SelectTrigger>
         <SelectContent>
           {sites.map((site) => (
