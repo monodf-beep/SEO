@@ -136,6 +136,13 @@ case "${build_local:-}" in
     else
       printf 'CRAWLSEO_IMAGE=%s\n' "$image" >> .env
     fi
+    # A shell that has ever `source`d .env with `set -a` (as SETUP.md's own
+    # cleanup snippet does) carries CRAWLSEO_IMAGE as a real exported
+    # variable, which docker compose prefers over the value just written to
+    # .env above — so a rebuilt image silently keeps deploying the old one.
+    # Exporting the fresh value here overrides any such stale export for the
+    # rest of this run.
+    export CRAWLSEO_IMAGE="$image"
     grep -qE '^CRAWLSEO_BUILD_LOCAL=' .env || printf 'CRAWLSEO_BUILD_LOCAL=1\n' >> .env
     echo "==> pulling the other images"
     $COMPOSE config --services | grep -vx app | xargs -r $COMPOSE pull
