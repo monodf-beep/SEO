@@ -265,9 +265,10 @@ lecture seule :
   existe-t-il comme titre ou redirection.
 - **Wikidata** : l'élément de l'article porte-t-il votre terme en alias, celui
   de l'entité a-t-il votre site en site officiel.
-- **Médias, partenaires, sites invités** : avec DataForSEO configuré, les
-  domaines qui vous lient déjà sont écartés ; sinon toutes les cibles donnent
-  une tâche.
+- **Blogs de médias et sites où vous publiez** : chaque espace reçoit les
+  sujets à forte demande où aucune de vos pages n'est dans le top 10, avec la
+  page à lier ; avec DataForSEO configuré, les domaines qui vous lient déjà
+  sont signalés.
 - **Profils sociaux** : la carte publique du profil (titre, description Open
   Graph) nomme-t-elle l'entité et le terme. Les plateformes qui exigent une
   connexion donnent une tâche de vérification manuelle.

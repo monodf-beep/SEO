@@ -48,7 +48,7 @@ The server needs access to the same PostgreSQL database as the main app. Make su
 | `get_opportunities` | SEO opportunities: striking distance, low CTR, content decay, cannibalization |
 | `list_objectives` | Objectives (goals spanning sites) with share-of-demand KPI and open task count |
 | `get_objective` | One objective: scope, KPI history, top queries, sub-objectives, tasks |
-| `sync_objective_actions` | Recompute the rule-generated tasks of an objective, including the off-site checks (Wikipedia, Wikidata, media, partners, guest sites, profiles) |
+| `sync_objective_actions` | Recompute the rule-generated tasks of an objective, including the off-site checks (Wikipedia, Wikidata, media blogs, guest sites, profiles) |
 | `add_objective_action` | Add a manual task (Wikipedia edit, backlink request, article) |
 | `update_objective_action` | Change a task's status or notes |
 

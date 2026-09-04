@@ -36,8 +36,7 @@ export type ObjectivePayload = {
   status?: unknown;
   entityName?: unknown;
   wikiArticles?: unknown;
-  targetMedia?: unknown;
-  targetPartners?: unknown;
+  mediaBlogs?: unknown;
   guestSites?: unknown;
   socialProfiles?: unknown;
 };
@@ -67,8 +66,7 @@ export async function parseObjectivePayload(
     status?: "ACTIVE" | "PAUSED" | "DONE";
     entityName?: string | null;
     wikiArticles?: string[];
-    targetMedia?: string[];
-    targetPartners?: string[];
+    mediaBlogs?: string[];
     guestSites?: string[];
     socialProfiles?: string[];
   } = {};
@@ -155,7 +153,7 @@ export async function parseObjectivePayload(
         ? body.entityName.trim().slice(0, 200)
         : null;
   }
-  for (const key of ["wikiArticles", "targetMedia", "targetPartners", "guestSites", "socialProfiles"] as const) {
+  for (const key of ["wikiArticles", "mediaBlogs", "guestSites", "socialProfiles"] as const) {
     if (body[key] !== undefined) {
       data[key] = parseTerms(body[key] as string | string[]).slice(0, 50);
     }

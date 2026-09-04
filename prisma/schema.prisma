@@ -400,8 +400,7 @@ model Objective {
   rivalTerms  String[]        @default([])  // competing terms to capture
   entityName  String?                       // the organisation behind the goal, for Wikipedia / Wikidata / profiles
   wikiArticles String[]       @default([])  // fr.wikipedia titles to watch
-  targetMedia String[]        @default([])  // media domains to pitch (tribunes, coverage)
-  targetPartners String[]     @default([])  // institutions and partners to get a link from
+  mediaBlogs  String[]        @default([])  // media with a contributor space the user can publish in
   guestSites  String[]        @default([])  // sites where the user can publish articles themselves
   socialProfiles String[]     @default([])  // public profile URLs (YouTube, Facebook, Instagram, LinkedIn…)
   targetShare Float?                        // target share of demand, 0..1

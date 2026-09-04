@@ -24,8 +24,9 @@ export type NotorietyObjective = {
   rivalTerms: string[];
   entityName: string | null;
   wikiArticles: string[];
-  targetMedia: string[];
-  targetPartners: string[];
+  /** media with a contributor space the user can publish in */
+  mediaBlogs: string[];
+  /** other sites the user can publish on */
   guestSites: string[];
   socialProfiles: string[];
 };
@@ -71,8 +72,8 @@ let queue: Promise<unknown> = Promise.resolve();
 function serialised<T>(job: () => Promise<T>): Promise<T> {
   const run = queue.then(job, job);
   queue = run.then(
-    () => sleep(600),
-    () => sleep(600)
+    () => sleep(400),
+    () => sleep(400)
   );
   return run;
 }
@@ -442,7 +443,7 @@ async function wikiRules(input: NotorietyInput, hub: ScopedSite | null, notes: s
 
 /** Referring domains of every site in scope, when DataForSEO is configured. */
 async function referringDomains(input: NotorietyInput, notes: string[]): Promise<Set<string> | null> {
-  const wanted = [...input.objective.targetMedia, ...input.objective.targetPartners, ...input.objective.guestSites];
+  const wanted = [...input.objective.mediaBlogs, ...input.objective.guestSites];
   if (wanted.length === 0) return null;
   const refs = new Set<string>();
   let configured = false;
@@ -457,91 +458,77 @@ async function referringDomains(input: NotorietyInput, notes: string[]): Promise
     }
   }
   if (!configured) {
-    notes.push("DataForSEO n'est pas configuré : les liens déjà obtenus depuis les médias, partenaires et sites invités n'ont pas pu être vérifiés");
+    notes.push("DataForSEO n'est pas configuré : les liens déjà obtenus depuis les blogs de médias et les sites où vous publiez n'ont pas pu être vérifiés");
     return null;
   }
   return refs;
 }
 
-const MEDIA_HINTS: Array<[RegExp, string]> = [
-  [/mediapart\.fr/, "Le Club de Mediapart est ouvert aux abonnés : un billet s'y publie directement, sans passer par la rédaction, et peut être relayé en une. Une tribune dans le journal lui-même passe par la rédaction."],
-  [/letemps\.ch/, "Rubrique Opinions : une proposition de 3 500 à 4 500 signes, signée avec votre titre, envoyée à la rédaction. Le lien savoyard-vaudois est l'angle naturel pour un média romand."],
-  [/ledauphine\.com|lessorsavoyard\.fr|lemessager\.fr/, "Presse régionale : un communiqué ou une invitation (événement, publication, chiffre) à la locale, avec une personne à interviewer."],
-  [/francetvinfo\.fr|rts\.ch|radiofrance/, "Audiovisuel public régional : proposez un sujet incarné (un cours, une personne, une date) plutôt qu'un communiqué."],
+const BLOG_HINTS: Array<[RegExp, string]> = [
+  [/mediapart\.fr/, "Le Club de Mediapart : tout abonné publie son billet directement ; les meilleurs sont relayés en une du Club. Signez avec votre fonction à l'Institut."],
+  [/letemps\.ch/, "Les blogs du Temps sont hébergés sur invitation de la rédaction : demandez l'ouverture d'un blog ou publiez comme invité dans un blog existant. Le lien savoyard-vaudois est l'angle naturel pour un lectorat romand."],
 ];
 
-function mediaHint(domain: string): string {
-  for (const [re, hint] of MEDIA_HINTS) if (re.test(domain)) return hint;
-  return "Cherchez la rubrique Tribunes ou Opinions du média, ou envoyez une proposition d'angle à la rédaction avec une personne à interviewer.";
+function blogHint(domain: string): string {
+  for (const [re, hint] of BLOG_HINTS) if (re.test(domain)) return hint;
+  return "Espace contributeur ou blog invité du média : un billet signé, avec votre fonction, publié sous votre nom.";
 }
 
-function linkRules(input: NotorietyInput, refs: Set<string> | null, hub: ScopedSite | null): GeneratedAction[] {
+/**
+ * Places where the user can publish: each gets the topics that most
+ * deserve an article, rival vocabulary first, with the page to link back
+ * to. Media blogs come first because their authority is higher.
+ */
+function publishingRules(input: NotorietyInput, refs: Set<string> | null, hub: ScopedSite | null): GeneratedAction[] {
   const { objective, queries } = input;
   const actions: GeneratedAction[] = [];
   const hubLabel = hub ? hostOf(hub.domain) : "votre site pivot";
   const focusLabel = objective.focusTerms[0] ?? "votre terme";
-
-  const topRival = queries.filter((q) => q.bucket === "rival").sort((a, b) => b.impressions - a.impressions).slice(0, 2);
-  const topFocus = queries.filter((q) => q.bucket === "focus").sort((a, b) => b.impressions - a.impressions).slice(0, 1);
-  const angles = [...topRival, ...topFocus].map((q) => `${quote(q.query)} (${fmtInt(q.impressions)} impr./28 j)`).join(", ");
-
-  for (const raw of objective.targetMedia) {
-    const domain = hostOf(raw);
-    if (refs?.has(domain)) continue;
-    actions.push({
-      fingerprint: `press:${domain}`,
-      type: "PRESS",
-      title: `Proposer une tribune ou un sujet à ${domain}`,
-      detail:
-        `${refs ? "Aucun lien depuis ce média vers vos sites. " : ""}${mediaHint(domain)} ` +
-        (angles ? `Sujets à forte demande à mettre en avant : ${angles}. ` : "") +
-        `Demandez que l'article nomme ${quote(focusLabel)} et lie https://${hubLabel}/.`,
-      priority: 60,
-      source: "rule:press_target",
-    });
-  }
-
-  for (const raw of objective.targetPartners) {
-    const domain = hostOf(raw);
-    if (refs?.has(domain)) continue;
-    actions.push({
-      fingerprint: `partner:${domain}`,
-      type: "BACKLINK",
-      title: `Obtenir un lien depuis ${domain}`,
-      detail:
-        `${refs ? "Aucun lien depuis ce domaine vers vos sites. " : ""}` +
-        `Cherchez sa page partenaires, ressources ou annuaire, puis proposez la page la plus utile de https://${hubLabel}/ avec l'ancre ${quote(focusLabel)}. Un lien institutionnel pèse plus que dix liens de blogs.`,
-      priority: 55,
-      source: "rule:partner_link",
-    });
-  }
-
-  // Guest sites: pair each with the topics that most deserve an article.
   const topics = topicsForGuestArticles(queries);
-  let cursor = 0;
-  for (const raw of objective.guestSites) {
-    const domain = hostOf(raw);
+  const outlets = [
+    ...objective.mediaBlogs.map((d) => ({ domain: hostOf(d), media: true })),
+    ...objective.guestSites.map((d) => ({ domain: hostOf(d), media: false })),
+  ];
+  // Round robin, two topics per outlet at most, so a short topic list is
+  // shared rather than swallowed by the first outlet.
+  const perOutlet = new Map<string, number>();
+  const assignments: Array<{ outlet: (typeof outlets)[number]; t: QueryAgg }> = [];
+  let idx = 0;
+  for (const t of topics) {
+    if (outlets.length === 0) break;
+    let placed = false;
+    for (let tries = 0; tries < outlets.length && !placed; tries++) {
+      const outlet = outlets[(idx + tries) % outlets.length];
+      if ((perOutlet.get(outlet.domain) ?? 0) >= 2) continue;
+      perOutlet.set(outlet.domain, (perOutlet.get(outlet.domain) ?? 0) + 1);
+      assignments.push({ outlet, t });
+      idx = (idx + tries + 1) % outlets.length;
+      placed = true;
+    }
+    if (!placed) break;
+  }
+  for (const { outlet, t } of assignments) {
+    const { domain, media } = outlet;
     const already = refs?.has(domain);
-    for (let n = 0; n < 2 && cursor < topics.length; n++, cursor++) {
-      const t = topics[cursor];
+    {
       const site = input.sites.find((s) => s.id === t.siteId);
       actions.push({
-        fingerprint: `guest:${domain}:${normalizeTerm(t.query)}`,
-        type: "CONTENT_NEW",
-        title: `Écrire sur ${domain} : ${quote(t.query)}`,
+        fingerprint: `${media ? "mediablog" : "guest"}:${domain}:${normalizeTerm(t.query)}`,
+        type: media ? "PRESS" : "CONTENT_NEW",
+        title: `${media ? "Publier un billet sur" : "Écrire sur"} ${domain} : ${quote(t.query)}`,
         detail:
           `${fmtInt(t.impressions)} impressions sur 28 j et aucune de vos pages dans le top 10 (meilleure position ${t.position.toFixed(1)}${site ? ` sur ${hostOf(site.domain)}` : ""}). ` +
-          `Un article de fond sur ${domain} qui nomme ${quote(focusLabel)} dès le titre et renvoie vers ${t.page ?? `https://${hubLabel}/`}.` +
-          (already ? " Ce site vous lie déjà : gardez des ancres variées." : ""),
+          (media ? `${blogHint(domain)} ` : "") +
+          `Un article de fond qui nomme ${quote(focusLabel)} dès le titre et renvoie vers ${t.page ?? `https://${hubLabel}/`}.` +
+          (already ? " Ce domaine vous lie déjà : variez les ancres." : ""),
         query: t.query,
         url: t.page ?? undefined,
         siteId: t.siteId,
-        priority: clamp(18 * Math.log(1 + t.impressions) + 5),
-        source: "rule:guest_article",
+        priority: clamp(18 * Math.log(1 + t.impressions) + (media ? 10 : 5)),
+        source: media ? "rule:media_blog" : "rule:guest_article",
       });
     }
   }
-
   return actions;
 }
 
@@ -676,8 +663,7 @@ export async function generateNotorietyActions(input: NotorietyInput): Promise<N
   const hasAnything =
     o.entityName ||
     o.wikiArticles.length ||
-    o.targetMedia.length ||
-    o.targetPartners.length ||
+    o.mediaBlogs.length ||
     o.guestSites.length ||
     o.socialProfiles.length;
   if (!hasAnything) return { actions: [], notes };
@@ -688,7 +674,7 @@ export async function generateNotorietyActions(input: NotorietyInput): Promise<N
     referringDomains(input, notes),
     presenceRules(input, hub, notes),
   ]);
-  const links = linkRules(input, refs, hub);
+  const publishing = publishingRules(input, refs, hub);
 
-  return { actions: [...wiki, ...links, ...presence], notes };
+  return { actions: [...wiki, ...publishing, ...presence], notes };
 }

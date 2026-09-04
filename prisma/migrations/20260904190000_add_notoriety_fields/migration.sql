@@ -12,8 +12,7 @@ ALTER TYPE "ActionType" ADD VALUE 'PROFILE';
 -- AlterTable
 ALTER TABLE "Objective" ADD COLUMN     "entityName" TEXT,
 ADD COLUMN     "guestSites" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN     "mediaBlogs" TEXT[] DEFAULT ARRAY[]::TEXT[],
 ADD COLUMN     "socialProfiles" TEXT[] DEFAULT ARRAY[]::TEXT[],
-ADD COLUMN     "targetMedia" TEXT[] DEFAULT ARRAY[]::TEXT[],
-ADD COLUMN     "targetPartners" TEXT[] DEFAULT ARRAY[]::TEXT[],
 ADD COLUMN     "wikiArticles" TEXT[] DEFAULT ARRAY[]::TEXT[];
 

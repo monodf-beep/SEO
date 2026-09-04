@@ -16,8 +16,7 @@ export type ObjectiveTemplateNode = {
   targetShare?: number;
   entityName?: string;
   wikiArticles?: string[];
-  targetMedia?: string[];
-  targetPartners?: string[];
+  mediaBlogs?: string[];
   guestSites?: string[];
   socialProfiles?: string[];
   children?: ObjectiveTemplateNode[];
@@ -46,7 +45,7 @@ export const objectiveTemplates: ObjectiveTemplate[] = [
     key: "langue-savoyarde",
     label: "Visibilité de la langue savoyarde",
     summary:
-      "Un objectif racine sur les 4 sites, avec deux sous-objectifs : faire de langue-savoyarde.com la référence, et imposer le terme « langue savoyarde » face à francoprovençal, arpitan et patois. La racine porte aussi la notoriété : Wikipédia, Wikidata, médias, partenaires, sites invités.",
+      "Un objectif racine sur les 4 sites, avec deux sous-objectifs : faire de langue-savoyarde.com la référence, et imposer le terme « langue savoyarde » face à francoprovençal, arpitan et patois. La racine porte aussi la notoriété : Wikipédia, Wikidata, blogs de médias et sites où vous publiez.",
     root: {
       title: "Développer la visibilité de la langue savoyarde sur internet",
       description:
@@ -56,8 +55,7 @@ export const objectiveTemplates: ObjectiveTemplate[] = [
       targetShare: 0.5,
       entityName: "Institut de la langue savoyarde",
       wikiArticles: ["Savoyard (langue)", "Institut de la langue savoyarde", "Francoprovençal", "Patois savoyard"],
-      targetMedia: ["letemps.ch", "mediapart.fr", "ledauphine.com", "lessorsavoyard.fr", "france3-regions.francetvinfo.fr"],
-      targetPartners: ["culture.gouv.fr", "univ-smb.fr", "savoie.fr", "hautesavoie.fr", "ac-grenoble.fr"],
+      mediaBlogs: ["mediapart.fr", "letemps.ch"],
       guestSites: ["mordus2savoie.com", "nosalpes.eu"],
       children: [
         {

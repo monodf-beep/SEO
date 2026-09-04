@@ -114,7 +114,7 @@ export const tools = [
   {
     name: "sync_objective_actions",
     description:
-      "Recompute the rule-generated tasks of an objective from the latest GSC and crawl data, plus the notoriety checks (Wikipedia, Wikidata, media and partner links, guest sites, social profiles). Statuses set by the user are preserved.",
+      "Recompute the rule-generated tasks of an objective from the latest GSC and crawl data, plus the notoriety checks (Wikipedia, Wikidata, media blogs, guest sites, social profiles). Statuses set by the user are preserved.",
     schema: {
       objectiveId: z.string().describe("The objective ID"),
     },

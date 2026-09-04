@@ -123,8 +123,7 @@ export default async function ObjectivePage({ params }: Props) {
                 status: objective.status,
                 entityName: objective.entityName ?? "",
                 wikiArticles: objective.wikiArticles.join("\n"),
-                targetMedia: objective.targetMedia.join("\n"),
-                targetPartners: objective.targetPartners.join("\n"),
+                mediaBlogs: objective.mediaBlogs.join("\n"),
                 guestSites: objective.guestSites.join("\n"),
                 socialProfiles: objective.socialProfiles.join("\n"),
               }}
@@ -159,13 +158,12 @@ export default async function ObjectivePage({ params }: Props) {
             <span className="font-medium text-foreground">Entité :</span> {objective.entityName}
           </span>
         )}
-        {(objective.targetMedia.length > 0 || objective.targetPartners.length > 0 || objective.guestSites.length > 0) && (
+        {(objective.mediaBlogs.length > 0 || objective.guestSites.length > 0 || objective.wikiArticles.length > 0) && (
           <span>
             <span className="font-medium text-foreground">Hors site :</span>{" "}
             {[
-              objective.targetMedia.length ? `${objective.targetMedia.length} média${objective.targetMedia.length > 1 ? "s" : ""}` : null,
-              objective.targetPartners.length ? `${objective.targetPartners.length} partenaire${objective.targetPartners.length > 1 ? "s" : ""}` : null,
-              objective.guestSites.length ? `${objective.guestSites.length} site${objective.guestSites.length > 1 ? "s" : ""} invité${objective.guestSites.length > 1 ? "s" : ""}` : null,
+              objective.mediaBlogs.length ? `${objective.mediaBlogs.length} blog${objective.mediaBlogs.length > 1 ? "s" : ""} de média` : null,
+              objective.guestSites.length ? `${objective.guestSites.length} site${objective.guestSites.length > 1 ? "s" : ""} où publier` : null,
               objective.wikiArticles.length ? `${objective.wikiArticles.length} article${objective.wikiArticles.length > 1 ? "s" : ""} Wikipédia` : null,
             ]
               .filter(Boolean)

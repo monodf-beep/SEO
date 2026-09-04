@@ -26,8 +26,7 @@ export type ObjectiveFormValues = {
   status: "ACTIVE" | "PAUSED" | "DONE";
   entityName: string;
   wikiArticles: string;
-  targetMedia: string;
-  targetPartners: string;
+  mediaBlogs: string;
   guestSites: string;
   socialProfiles: string;
 };
@@ -71,8 +70,7 @@ export function ObjectiveFormDialog({
     status: "ACTIVE",
     entityName: "",
     wikiArticles: "",
-    targetMedia: "",
-    targetPartners: "",
+    mediaBlogs: "",
     guestSites: "",
     socialProfiles: "",
     ...initial,
@@ -81,8 +79,7 @@ export function ObjectiveFormDialog({
     Boolean(
       initial?.entityName ||
         initial?.wikiArticles ||
-        initial?.targetMedia ||
-        initial?.targetPartners ||
+        initial?.mediaBlogs ||
         initial?.guestSites ||
         initial?.socialProfiles
     )
@@ -115,8 +112,7 @@ export function ObjectiveFormDialog({
         deadline: values.deadline || null,
         entityName: values.entityName,
         wikiArticles: values.wikiArticles,
-        targetMedia: values.targetMedia,
-        targetPartners: values.targetPartners,
+        mediaBlogs: values.mediaBlogs,
         guestSites: values.guestSites,
         socialProfiles: values.socialProfiles,
         ...(mode === "edit" ? { status: values.status } : {}),
@@ -305,11 +301,8 @@ export function ObjectiveFormDialog({
                   <Field label="Profils sociaux" hint="URL publiques, une par ligne">
                     <textarea className={textareaClass} rows={3} value={values.socialProfiles} onChange={(e) => set("socialProfiles", e.target.value)} placeholder={"https://www.youtube.com/@…\nhttps://www.facebook.com/…"} />
                   </Field>
-                  <Field label="Médias à convaincre" hint="Domaines : tribunes, interviews, sujets">
-                    <textarea className={textareaClass} rows={3} value={values.targetMedia} onChange={(e) => set("targetMedia", e.target.value)} placeholder={"letemps.ch\nmediapart.fr"} />
-                  </Field>
-                  <Field label="Institutions et partenaires" hint="Domaines dont un lien compte">
-                    <textarea className={textareaClass} rows={3} value={values.targetPartners} onChange={(e) => set("targetPartners", e.target.value)} placeholder={"culture.gouv.fr\nuniv-smb.fr"} />
+                  <Field label="Blogs de médias où je peux écrire" hint="Club de Mediapart, blogs du Temps…">
+                    <textarea className={textareaClass} rows={3} value={values.mediaBlogs} onChange={(e) => set("mediaBlogs", e.target.value)} placeholder={"mediapart.fr\nletemps.ch"} />
                   </Field>
                   <Field label="Sites où je peux publier" hint="Vos accès contributeur">
                     <textarea className={textareaClass} rows={3} value={values.guestSites} onChange={(e) => set("guestSites", e.target.value)} placeholder={"mordus2savoie.com\nnosalpes.eu"} />

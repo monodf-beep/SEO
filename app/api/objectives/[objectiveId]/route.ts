@@ -60,8 +60,7 @@ export async function PATCH(req: Request, { params }: Ctx) {
       data.rivalTerms !== undefined ||
       data.entityName !== undefined ||
       data.wikiArticles !== undefined ||
-      data.targetMedia !== undefined ||
-      data.targetPartners !== undefined ||
+      data.mediaBlogs !== undefined ||
       data.guestSites !== undefined ||
       data.socialProfiles !== undefined;
     const sync = scopeChanged ? await syncObjectiveActions(objectiveId) : null;
