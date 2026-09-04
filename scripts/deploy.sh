@@ -170,5 +170,7 @@ if [ "$COMPOSE_FILE" = "docker-compose.traefik.yml" ]; then
 else
   echo "The first certificate can take a minute; check: $COMPOSE logs caddy"
 fi
-echo
-echo "Once your account exists, set DISABLE_REGISTRATION=true in .env and re-run."
+if ! grep -qE '^DISABLE_REGISTRATION=true' .env; then
+  echo
+  echo "Registration is open: once your account exists, set DISABLE_REGISTRATION=true in .env and re-run."
+fi
