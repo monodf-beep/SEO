@@ -24,6 +24,7 @@ model User {
   sites         Site[]
   alerts        Alert[]
   apiKeys       ApiKey[]
+  objectives    Objective[]
 }
 
 model Account {
@@ -96,6 +97,7 @@ model Site {
   alerts        Alert[]
   savedKeywords SavedKeyword[]
   rankSnapshots RankSnapshot[]
+  objectiveActions ObjectiveAction[]
 
   @@unique([userId, domain])
 }
@@ -354,4 +356,85 @@ enum AlertChannel {
   TELEGRAM
   WEBHOOK
   SLACK
+}
+
+// ============ OBJECTIVES ============
+//
+// An objective is a goal that spans sites ("grow the visibility of the
+// Savoyard language"). It carries a scope — which sites, which search terms
+// to defend and which competing terms to capture — and the platform derives a
+// KPI (share of demand) and a list of actions from the GSC and crawl data it
+// already holds. Objectives nest one level or more through parentId.
+
+model Objective {
+  id          String          @id @default(cuid())
+  userId      String
+  parentId    String?
+  title       String
+  description String?
+  siteIds     String[]        @default([])  // empty = every site of the user
+  focusTerms  String[]        @default([])  // terms to defend, substring match on queries
+  rivalTerms  String[]        @default([])  // competing terms to capture
+  targetShare Float?                        // target share of demand, 0..1
+  deadline    DateTime?
+  status      ObjectiveStatus @default(ACTIVE)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent      Objective?      @relation("ObjectiveTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Objective[]     @relation("ObjectiveTree")
+  actions     ObjectiveAction[]
+
+  @@index([userId])
+  @@index([parentId])
+}
+
+model ObjectiveAction {
+  id          String       @id @default(cuid())
+  objectiveId String
+  siteId      String?
+  type        ActionType
+  status      ActionStatus @default(TODO)
+  title       String
+  detail      String?      // the evidence: numbers that justify the action
+  query       String?
+  url         String?
+  priority    Int          @default(50) // 0..100, higher first
+  source      String       @default("manual") // "manual" or "rule:<name>"
+  fingerprint String?      // stable key for rule-generated actions (dedup)
+  notes       String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  doneAt      DateTime?
+
+  objective   Objective    @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+  site        Site?        @relation(fields: [siteId], references: [id], onDelete: SetNull)
+
+  @@unique([objectiveId, fingerprint])
+  @@index([objectiveId, status])
+}
+
+enum ObjectiveStatus {
+  ACTIVE
+  PAUSED
+  DONE
+}
+
+enum ActionType {
+  CONTENT_NEW      // write a new page / article
+  CONTENT_UPDATE   // strengthen or rewrite an existing page
+  TERMINOLOGY      // install the defended term on a page that ranks for a rival term
+  INTERNAL_LINK    // link between two of the user's sites or pages
+  BACKLINK         // outreach for an external link
+  WIKIPEDIA        // Wikipedia / Wikidata work, always manual
+  TECHNICAL        // crawl / vitals fix
+  OTHER
+}
+
+enum ActionStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+  DISMISSED
 }

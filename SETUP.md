@@ -153,6 +153,20 @@ passe et affiche l'URL.
 Le script est ré-exécutable : il ne régénère pas les secrets si `.env` existe,
 donc un second passage vaut mise à jour, pas réinstallation.
 
+⚠️ Par défaut, le script récupère l'image publiée `ghcr.io/crawlseo/crawlseo`,
+c'est-à-dire le projet amont, sans les modifications de ce dépôt. Pour déployer
+ce code-ci (interface en français, objectifs, connecteur MCP HTTP…), il faut
+construire l'image sur le serveur :
+
+```bash
+git pull
+CRAWLSEO_BUILD_LOCAL=1 DOMAIN=siip.srv1697018.hstgr.cloud ./scripts/deploy.sh
+```
+
+Le premier passage inscrit `CRAWLSEO_BUILD_LOCAL=1` et `CRAWLSEO_IMAGE` dans
+`.env` ; les suivants reconstruisent automatiquement à chaque `git pull`. Les
+migrations de base s'exécutent au démarrage du conteneur.
+
 Dans les deux cas, l'application n'est joignable que par le réseau Docker et
 Postgres n'est publié que sur `127.0.0.1:5432`, pour rester accessible au serveur
 MCP sans être exposé. La différence tient au proxy :

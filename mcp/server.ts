@@ -14,6 +14,7 @@ import { pathToFileURL } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
+import type { ActionStatus, Prisma } from "@prisma/client";
 
 import { db } from "../lib/db";
 import {
@@ -23,6 +24,11 @@ import {
   getDailyTraffic,
 } from "../lib/seo-metrics";
 import { getAllOpportunities } from "../lib/seo-opportunities";
+import {
+  getObjectiveKpi,
+  resolveScope,
+  syncObjectiveActions,
+} from "../lib/objectives";
 import { runSiteCrawl } from "../lib/crawler/engine";
 
 import {
@@ -33,6 +39,9 @@ import {
   formatCrawlIssues,
   formatVitals,
   formatOpportunities,
+  formatObjectiveList,
+  formatObjective,
+  formatSyncResult,
 } from "./formatters";
 
 // ---------------------------------------------------------------------------
@@ -351,6 +360,183 @@ server.tool(
   async ({ siteId }) => {
     const opportunities = await getAllOpportunities(siteId);
     return { content: [{ type: "text", text: formatOpportunities(opportunities) }] };
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 11. list_objectives
+// ---------------------------------------------------------------------------
+
+server.tool(
+  "list_objectives",
+  "List objectives (goals that span sites) with their share-of-demand KPI and open task count.",
+  {},
+  async () => {
+    const objectives = await db.objective.findMany({
+      orderBy: { createdAt: "asc" },
+      include: {
+        _count: {
+          select: { children: true, actions: { where: { status: { in: ["TODO", "IN_PROGRESS"] } } } },
+        },
+      },
+    });
+    if (objectives.length === 0) {
+      return { content: [{ type: "text", text: "No objectives yet. Create one in the Objectifs page or with the template." }] };
+    }
+    const rows = await Promise.all(
+      objectives.map(async (o) => ({ ...o, kpi: await getObjectiveKpi(o) }))
+    );
+    return { content: [{ type: "text", text: formatObjectiveList(rows) }] };
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 12. get_objective
+// ---------------------------------------------------------------------------
+
+server.tool(
+  "get_objective",
+  "Get one objective in full: scope, share-of-demand KPI and history, top queries for both vocabularies, sub-objectives, and tasks (open ones by default).",
+  {
+    objectiveId: z.string().describe("The objective ID"),
+    status: z
+      .string()
+      .optional()
+      .describe("Task status filter: TODO, IN_PROGRESS, DONE, DISMISSED or ALL (default: open tasks)"),
+  },
+  async ({ objectiveId, status }) => {
+    const objective = await db.objective.findUnique({
+      where: { id: objectiveId },
+      include: { children: { orderBy: { createdAt: "asc" } }, parent: { select: { id: true, title: true } } },
+    });
+    if (!objective) {
+      return { content: [{ type: "text", text: `Objective ${objectiveId} not found.` }], isError: true };
+    }
+    const scope = await resolveScope(objective);
+    const kpi = await getObjectiveKpi(objective, scope);
+    const open: ActionStatus[] = ["TODO", "IN_PROGRESS"];
+    const statusFilter: Prisma.ObjectiveActionWhereInput["status"] =
+      !status || status === "OPEN"
+        ? { in: open }
+        : status === "ALL"
+          ? undefined
+          : (status as ActionStatus);
+    const actions = await db.objectiveAction.findMany({
+      where: { objectiveId, ...(statusFilter ? { status: statusFilter } : {}) },
+      orderBy: [{ status: "asc" }, { priority: "desc" }],
+    });
+    const children = await Promise.all(
+      objective.children.map(async (c) => ({
+        ...c,
+        kpi: await getObjectiveKpi(c),
+        todo: await db.objectiveAction.count({
+          where: { objectiveId: c.id, status: { in: ["TODO", "IN_PROGRESS"] } },
+        }),
+      }))
+    );
+    return {
+      content: [{ type: "text", text: formatObjective({ ...objective, scope, kpi, actions, children }) }],
+    };
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 13. sync_objective_actions
+// ---------------------------------------------------------------------------
+
+server.tool(
+  "sync_objective_actions",
+  "Recompute the rule-generated tasks of an objective from the latest GSC and crawl data. Statuses set by the user are preserved.",
+  { objectiveId: z.string().describe("The objective ID") },
+  async ({ objectiveId }) => {
+    const exists = await db.objective.findUnique({ where: { id: objectiveId }, select: { id: true } });
+    if (!exists) {
+      return { content: [{ type: "text", text: `Objective ${objectiveId} not found.` }], isError: true };
+    }
+    const result = await syncObjectiveActions(objectiveId);
+    return { content: [{ type: "text", text: formatSyncResult(result) }] };
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 14. add_objective_action
+// ---------------------------------------------------------------------------
+
+const ACTION_TYPES = [
+  "CONTENT_NEW",
+  "CONTENT_UPDATE",
+  "TERMINOLOGY",
+  "INTERNAL_LINK",
+  "BACKLINK",
+  "WIKIPEDIA",
+  "TECHNICAL",
+  "OTHER",
+] as const;
+
+server.tool(
+  "add_objective_action",
+  "Add a manual task to an objective (a Wikipedia edit, a backlink request, an article to write).",
+  {
+    objectiveId: z.string().describe("The objective ID"),
+    title: z.string().describe("Short imperative title"),
+    type: z.enum(ACTION_TYPES).optional().describe("Task type (default OTHER)"),
+    detail: z.string().optional().describe("Why, with which sources, on which page"),
+    siteId: z.string().optional().describe("Site the task targets"),
+    url: z.string().optional().describe("Page the task targets"),
+    priority: z.number().min(1).max(100).optional().describe("1-100, higher first (default 50)"),
+  },
+  async ({ objectiveId, title, type, detail, siteId, url, priority }) => {
+    const objective = await db.objective.findUnique({ where: { id: objectiveId }, select: { userId: true } });
+    if (!objective) {
+      return { content: [{ type: "text", text: `Objective ${objectiveId} not found.` }], isError: true };
+    }
+    if (siteId) {
+      const site = await db.site.findUnique({ where: { id: siteId }, select: { userId: true } });
+      if (!site || site.userId !== objective.userId) {
+        return { content: [{ type: "text", text: `Site ${siteId} not found for this objective's owner.` }], isError: true };
+      }
+    }
+    const action = await db.objectiveAction.create({
+      data: {
+        objectiveId,
+        title: title.trim().slice(0, 300),
+        type: type ?? "OTHER",
+        detail: detail?.trim() || null,
+        siteId: siteId || null,
+        url: url?.trim() || null,
+        priority: priority ? Math.round(priority) : 50,
+        source: "manual",
+      },
+    });
+    return { content: [{ type: "text", text: `Task created: ${action.id}\n${action.title} [${action.type}, P${action.priority}]` }] };
+  }
+);
+
+// ---------------------------------------------------------------------------
+// 15. update_objective_action
+// ---------------------------------------------------------------------------
+
+server.tool(
+  "update_objective_action",
+  "Change the status or notes of a task.",
+  {
+    actionId: z.string().describe("The task ID"),
+    status: z.enum(["TODO", "IN_PROGRESS", "DONE", "DISMISSED"]).optional().describe("New status"),
+    notes: z.string().optional().describe("Free-text notes"),
+  },
+  async ({ actionId, status, notes }) => {
+    const existing = await db.objectiveAction.findUnique({ where: { id: actionId }, select: { id: true } });
+    if (!existing) {
+      return { content: [{ type: "text", text: `Task ${actionId} not found.` }], isError: true };
+    }
+    const action = await db.objectiveAction.update({
+      where: { id: actionId },
+      data: {
+        ...(status ? { status, doneAt: status === "DONE" ? new Date() : null } : {}),
+        ...(notes !== undefined ? { notes: notes.trim() || null } : {}),
+      },
+    });
+    return { content: [{ type: "text", text: `Task ${action.id} updated: status ${action.status}${action.notes ? `, notes: ${action.notes}` : ""}` }] };
   }
 );
 

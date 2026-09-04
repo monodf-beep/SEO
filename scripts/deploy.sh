@@ -113,8 +113,38 @@ done
 # Deploy
 # ---------------------------------------------------------------------------
 
-echo "==> pulling images"
-$COMPOSE pull
+# ---------------------------------------------------------------------------
+# Image: the published build, or one built from this checkout
+# ---------------------------------------------------------------------------
+#
+# The published image is the upstream project's. A checkout that carries its
+# own changes has to build its image here, otherwise a re-run of this script
+# would quietly replace the deployed app with the upstream one. Opt in with
+# CRAWLSEO_BUILD_LOCAL=1, on the command line or in .env. The resulting tag is
+# written to .env as CRAWLSEO_IMAGE so a plain `docker compose up -d` keeps
+# using it.
+
+build_local=${CRAWLSEO_BUILD_LOCAL:-$(grep -E '^CRAWLSEO_BUILD_LOCAL=' .env | cut -d= -f2- || true)}
+case "${build_local:-}" in
+  1|true|yes)
+    sha=$(git rev-parse --short HEAD 2>/dev/null || echo manual)
+    image="crawlseo-local:${sha}"
+    echo "==> building ${image} from this checkout"
+    docker build -t "$image" -t crawlseo-local:latest .
+    if grep -qE '^CRAWLSEO_IMAGE=' .env; then
+      sed -i "s|^CRAWLSEO_IMAGE=.*|CRAWLSEO_IMAGE=${image}|" .env
+    else
+      printf 'CRAWLSEO_IMAGE=%s\n' "$image" >> .env
+    fi
+    grep -qE '^CRAWLSEO_BUILD_LOCAL=' .env || printf 'CRAWLSEO_BUILD_LOCAL=1\n' >> .env
+    echo "==> pulling the other images"
+    $COMPOSE config --services | grep -vx app | xargs -r $COMPOSE pull
+    ;;
+  *)
+    echo "==> pulling images"
+    $COMPOSE pull
+    ;;
+esac
 
 echo "==> starting stack"
 $COMPOSE up -d

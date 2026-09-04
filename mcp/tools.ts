@@ -96,4 +96,50 @@ export const tools = [
       siteId: z.string().describe("The site ID"),
     },
   },
+  {
+    name: "list_objectives",
+    description:
+      "List the user's objectives (goals that span sites) with their share-of-demand KPI and the number of open tasks.",
+    schema: {},
+  },
+  {
+    name: "get_objective",
+    description:
+      "Get one objective in full: scope, share-of-demand KPI with its 6-period history, top queries for both vocabularies, sub-objectives, and tasks.",
+    schema: {
+      objectiveId: z.string().describe("The objective ID"),
+      status: z.string().optional().describe("Filter tasks by status: TODO, IN_PROGRESS, DONE, DISMISSED (default: open tasks)"),
+    },
+  },
+  {
+    name: "sync_objective_actions",
+    description:
+      "Recompute the rule-generated tasks of an objective from the latest GSC and crawl data. Statuses set by the user are preserved.",
+    schema: {
+      objectiveId: z.string().describe("The objective ID"),
+    },
+  },
+  {
+    name: "add_objective_action",
+    description:
+      "Add a manual task to an objective (a Wikipedia edit, a backlink request, an article to write).",
+    schema: {
+      objectiveId: z.string().describe("The objective ID"),
+      title: z.string().describe("Short imperative title"),
+      type: z.string().optional().describe("CONTENT_NEW, CONTENT_UPDATE, TERMINOLOGY, INTERNAL_LINK, BACKLINK, WIKIPEDIA, TECHNICAL or OTHER"),
+      detail: z.string().optional().describe("Why, with which sources, on which page"),
+      siteId: z.string().optional().describe("Site the task targets"),
+      url: z.string().optional().describe("Page the task targets"),
+      priority: z.number().optional().describe("1-100, higher first (default 50)"),
+    },
+  },
+  {
+    name: "update_objective_action",
+    description: "Change the status or notes of a task.",
+    schema: {
+      actionId: z.string().describe("The task ID"),
+      status: z.string().optional().describe("TODO, IN_PROGRESS, DONE or DISMISSED"),
+      notes: z.string().optional().describe("Free-text notes"),
+    },
+  },
 ] as const;

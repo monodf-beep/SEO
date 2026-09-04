@@ -46,6 +46,11 @@ The server needs access to the same PostgreSQL database as the main app. Make su
 | `get_crawl_issues` | List issues found during a crawl |
 | `get_vitals` | Core Web Vitals reports (LCP, CLS, INP, TTFB) |
 | `get_opportunities` | SEO opportunities: striking distance, low CTR, content decay, cannibalization |
+| `list_objectives` | Objectives (goals spanning sites) with share-of-demand KPI and open task count |
+| `get_objective` | One objective: scope, KPI history, top queries, sub-objectives, tasks |
+| `sync_objective_actions` | Recompute the rule-generated tasks of an objective |
+| `add_objective_action` | Add a manual task (Wikipedia edit, backlink request, article) |
+| `update_objective_action` | Change a task's status or notes |
 
 ## Running Manually
 
