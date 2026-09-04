@@ -627,6 +627,7 @@ export async function generateActions(
 
   if (objective.focusTerms.length > 0 || objective.rivalTerms.length > 0) {
     const conversations = await generateConversationActions({
+      userId: objective.userId,
       focusTerms: objective.focusTerms,
       rivalTerms: objective.rivalTerms,
       entityName: objective.entityName ?? null,

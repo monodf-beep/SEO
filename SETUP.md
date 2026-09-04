@@ -282,9 +282,14 @@ lecture seule :
   Console, API « YouTube Data v3 »), posts Bluesky (sans clé) et fils Reddit
   (Reddit refuse souvent les serveurs : la note du recalcul le dit). Avec une
   URL de chaîne YouTube dans les profils sociaux, la description de la chaîne
-  et les titres des dix dernières vidéos sont vérifiés. Facebook, Instagram et
-  LinkedIn ne se lisent pas sans connexion et l'interdisent : ils ne sont pas
-  lus.
+  et les titres des dix dernières vidéos sont vérifiés. Facebook, Instagram,
+  LinkedIn, TikTok et X ne se lisent pas sans connexion et l'interdisent : ils
+  passent par **Apify** (jeton à coller dans les paramètres d'un site, à côté
+  de DataForSEO). Chaque recalcul lance un scraper par réseau sur votre compte
+  Apify, dix résultats chacun, et propose les posts récents sur votre terme
+  comme conversations à rejoindre. `APIFY_NETWORKS=instagram,facebook` dans
+  `.env` limite les réseaux lus. Le crédit gratuit mensuel d'Apify couvre un
+  usage courant ; au-delà, comptez quelques centimes par recalcul.
 - **Sites concurrents** : avec DataForSEO, les domaines qui lient ces sites
   mais aucun des vôtres deviennent des tâches « obtenir un lien » (environ
   0,02 € par site concurrent et par recalcul).

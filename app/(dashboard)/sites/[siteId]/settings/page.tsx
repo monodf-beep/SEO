@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { DeleteSiteButton } from "@/components/sites/delete-site-button";
 import { ApiKeysSection } from "@/components/settings/api-keys-section";
+import { ApifySection } from "@/components/settings/apify-section";
 import { SiteAccountSelect } from "@/components/sites/site-account-select";
 import { listGoogleAccounts } from "@/lib/google/accounts";
 
@@ -46,6 +47,7 @@ export default async function SettingsPage({ params }: Props) {
   });
   const apiKeyStatus: Record<string, { connected: boolean; updatedAt?: string }> = {
     dataforseo: { connected: false },
+    apify: { connected: false },
   };
   for (const key of apiKeys) {
     apiKeyStatus[key.provider] = {
@@ -104,6 +106,7 @@ export default async function SettingsPage({ params }: Props) {
 
         {/* External API Keys */}
         <ApiKeysSection initialStatus={apiKeyStatus} />
+        <ApifySection initialStatus={apiKeyStatus.apify} />
 
         {/* Data summary */}
         <div className="panel p-5">

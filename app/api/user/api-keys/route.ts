@@ -16,6 +16,7 @@ export async function GET() {
 
     const providers: Record<string, { connected: boolean; updatedAt?: string }> = {
       dataforseo: { connected: false },
+      apify: { connected: false },
     };
 
     for (const key of keys) {
@@ -52,7 +53,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (body.provider !== "dataforseo") {
+    if (body.provider !== "dataforseo" && body.provider !== "apify") {
       return Response.json({ error: "Fournisseur non pris en charge" }, { status: 400 });
     }
 

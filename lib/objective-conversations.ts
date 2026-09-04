@@ -7,10 +7,14 @@
  * - Reddit through its public JSON search, which refuses most server IPs;
  *   a refusal is reported, never retried in a loop
  *
- * Facebook, Instagram and LinkedIn expose nothing readable without a login
- * and forbid automated reading: they are deliberately absent.
+ * Facebook, Instagram, LinkedIn, TikTok and X expose nothing readable
+ * without a login and forbid automated reading. They are reached only
+ * through Apify's scrapers, on the user's own Apify account, when a token is
+ * configured: the scraping and its risk sit with Apify, not with the
+ * user's social accounts.
  */
 
+import { getApifyToken, runActorItems } from "@/lib/apify/client";
 import { matchesAny, normalizeTerm } from "@/lib/objective-terms";
 import type { GeneratedAction } from "@/lib/objectives";
 
@@ -18,6 +22,7 @@ const TIMEOUT_MS = 8000;
 const USER_AGENT = "CrawlSEO/1.0 (objective conversation checks; read-only)";
 
 export type ConversationInput = {
+  userId: string;
   focusTerms: string[];
   rivalTerms: string[];
   entityName: string | null;
@@ -241,20 +246,147 @@ async function redditRules(input: ConversationInput, notes: string[]): Promise<G
 }
 
 // ---------------------------------------------------------------------------
+// Apify: Instagram, Facebook, LinkedIn, TikTok, X
+// ---------------------------------------------------------------------------
+
+type Post = { url: string; text: string; author: string; date: string | null; likes: number | null };
+
+type Network = {
+  key: string;
+  label: string;
+  actor: string;
+  input: (term: string) => Record<string, unknown>;
+  map: (item: Record<string, unknown>) => Post | null;
+};
+
+const str = (v: unknown) => (typeof v === "string" ? v : "");
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : null);
+const obj = (v: unknown) => (v && typeof v === "object" ? (v as Record<string, unknown>) : {});
+const hashtag = (term: string) => normalizeTerm(term).replace(/[^a-z0-9]/g, "");
+const isoOf = (v: unknown) => {
+  if (typeof v === "number") return new Date(v < 1e12 ? v * 1000 : v).toISOString();
+  if (typeof v === "string" && v) return v;
+  return null;
+};
+
+const NETWORKS: Network[] = [
+  {
+    key: "instagram",
+    label: "Instagram",
+    actor: "apify/instagram-hashtag-scraper",
+    input: (term) => ({ hashtags: [hashtag(term)], resultsType: "posts", resultsLimit: 10 }),
+    map: (i) => ({ url: str(i.url), text: str(i.caption), author: str(i.ownerUsername), date: isoOf(i.timestamp), likes: num(i.likesCount) }),
+  },
+  {
+    key: "facebook",
+    label: "Facebook",
+    actor: "scraper_one/facebook-posts-search",
+    input: (term) => ({ query: term, resultsCount: 10, searchType: "latest" }),
+    map: (i) => ({ url: str(i.url), text: str(i.postText), author: str(obj(i.author).name), date: isoOf(i.timestamp), likes: num(i.reactionsCount) }),
+  },
+  {
+    key: "linkedin",
+    label: "LinkedIn",
+    actor: "harvestapi/linkedin-post-search",
+    input: (term) => ({ searchQueries: [term], maxPosts: 10, sortBy: "date" }),
+    map: (i) => ({
+      url: str(i.linkedinUrl),
+      text: str(i.content),
+      author: str(obj(i.author).name),
+      date: isoOf(obj(i.postedAt).timestamp ?? obj(i.postedAt).date),
+      likes: num(obj(i.engagement).likes),
+    }),
+  },
+  {
+    key: "tiktok",
+    label: "TikTok",
+    actor: "clockworks/tiktok-scraper",
+    input: (term) => ({ searchQueries: [term], resultsPerPage: 10, searchSection: "/video" }),
+    map: (i) => ({ url: str(i.webVideoUrl), text: str(i.text), author: str(obj(i.authorMeta).name), date: isoOf(i.createTimeISO), likes: num(i.diggCount) }),
+  },
+  {
+    key: "x",
+    label: "X",
+    actor: "apidojo/tweet-scraper",
+    input: (term) => ({ searchTerms: [term], maxItems: 10, sort: "Latest" }),
+    map: (i) => ({ url: str(i.url), text: str(i.text), author: str(obj(i.author).userName), date: isoOf(i.createdAt), likes: num(i.likeCount) }),
+  },
+];
+
+/** APIFY_NETWORKS limits the networks searched, e.g. "instagram,facebook". */
+function enabledNetworks(): Network[] {
+  const wanted = (process.env.APIFY_NETWORKS ?? "")
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  return wanted.length ? NETWORKS.filter((n) => wanted.includes(n.key)) : NETWORKS;
+}
+
+async function apifyRules(input: ConversationInput, notes: string[]): Promise<GeneratedAction[]> {
+  const actions: GeneratedAction[] = [];
+  const token = await getApifyToken(input.userId);
+  if (!token) {
+    notes.push("Apify non configuré : Instagram, Facebook, LinkedIn, TikTok et X n'ont pas été lus");
+    return actions;
+  }
+  const focusLabel = input.focusTerms[0] ?? null;
+  const term = focusLabel ?? input.rivalTerms[0];
+  if (!term) return actions;
+
+  await Promise.all(
+    enabledNetworks().map(async (net) => {
+      let items: Record<string, unknown>[];
+      try {
+        items = await runActorItems(token, net.actor, net.input(term), { timeoutSecs: 90, maxItems: 10 });
+      } catch (err) {
+        notes.push(`Apify ${net.label} : ${err instanceof Error ? err.message.slice(0, 120) : "échec"}`);
+        return;
+      }
+      let n = 0;
+      for (const raw of items) {
+        const p = net.map(raw);
+        if (!p || !p.url) continue;
+        const own = input.socialProfiles.some((s) => p.author && s.toLowerCase().includes(p.author.toLowerCase()));
+        if (own) continue;
+        const id = p.url.replace(/[?#].*$/, "").split("/").filter(Boolean).slice(-2).join("-");
+        actions.push({
+          fingerprint: `conv:${net.key}:${id}`,
+          type: "SOCIAL",
+          title: `Commenter le post de ${p.author ? `@${p.author}` : "quelqu'un"} sur ${net.label} (${quote(term)})`,
+          detail:
+            (p.date ? `Il y a ${daysAgo(p.date)} jours` : "Date inconnue") +
+            (p.likes !== null ? `, ${p.likes} réactions` : "") +
+            ` : « ${p.text.slice(0, 140)}${p.text.length > 140 ? "…" : ""} ». ` +
+            (focusLabel && !matchesAny(p.text, [focusLabel])
+              ? `Le post ne nomme pas ${quote(focusLabel)} : un commentaire utile qui l'emploie, sans lien promotionnel, fait entrer le terme dans la conversation.`
+              : `Un commentaire utile depuis votre compte associe l'entité au sujet.`),
+          url: p.url,
+          priority: 38,
+          source: `rule:conversation_${net.key}`,
+        });
+        if (++n >= 3) break;
+      }
+    })
+  );
+  return actions;
+}
+
+// ---------------------------------------------------------------------------
 // Entry point
 // ---------------------------------------------------------------------------
 
 export async function generateConversationActions(input: ConversationInput): Promise<ConversationReport> {
   const notes: string[] = [];
   if (searchTerms(input).length === 0) return { actions: [], notes };
-  const [yt, bsky, reddit] = await Promise.all([
+  const [yt, bsky, reddit, apify] = await Promise.all([
     youtubeRules(input, notes),
     blueskyRules(input, notes),
     redditRules(input, notes),
+    apifyRules(input, notes),
   ]);
   // Dedupe on the normalized title in case two networks surface the same thing.
   const seen = new Set<string>();
-  const actions = [...yt, ...bsky, ...reddit].filter((a) => {
+  const actions = [...yt, ...bsky, ...reddit, ...apify].filter((a) => {
     const k = normalizeTerm(a.title);
     if (seen.has(k)) return false;
     seen.add(k);
