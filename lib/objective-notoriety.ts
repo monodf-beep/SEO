@@ -604,7 +604,7 @@ function publishingRules(input: NotorietyInput, refs: Set<string> | null, hub: S
       query: t.query,
       url: t.page ?? undefined,
       siteId: t.siteId ?? undefined,
-      priority: clamp(Math.max(20, (t.ranked ? 10 : 18) * Math.log(1 + t.impressions) + (media ? 10 : 5))),
+      priority: clamp(Math.max(20, (t.ranked ? 7 : 12) * Math.log(1 + t.impressions) + (media ? 10 : 5))),
       source: media ? "rule:media_blog" : "rule:guest_article",
     });
   }

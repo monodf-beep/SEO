@@ -11,7 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plus, Sparkles } from "lucide-react";
 
 export type ObjectiveFormValues = {
   id?: string;
@@ -100,6 +100,66 @@ export function ObjectiveFormDialog({
       ...v,
       siteIds: v.siteIds.includes(id) ? v.siteIds.filter((s) => s !== id) : [...v.siteIds, id],
     }));
+  }
+
+  const [prefilling, setPrefilling] = useState(false);
+  const [prefillNote, setPrefillNote] = useState("");
+
+  /** Union of what the user typed and what was found, one entry per line. */
+  function mergeLines(current: string, found: string[]): string {
+    const lines = current.split(/[\n,;]/).map((l) => l.trim()).filter(Boolean);
+    const seen = new Set(lines.map((l) => l.toLowerCase()));
+    for (const f of found) {
+      if (seen.has(f.toLowerCase())) continue;
+      seen.add(f.toLowerCase());
+      lines.push(f);
+    }
+    return lines.join("\n");
+  }
+
+  async function handlePrefill() {
+    setPrefilling(true);
+    setPrefillNote("");
+    try {
+      const res = await fetch("/api/objectives/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ siteIds: values.siteIds, focusTerms: values.focusTerms, rivalTerms: values.rivalTerms }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Échec du pré-remplissage");
+      const found = body as {
+        entityName: string | null;
+        wikiArticles: string[];
+        socialProfiles: string[];
+        rivalSites: string[];
+        mediaBlogs: string[];
+        notes: string[];
+      };
+      setValues((v) => ({
+        ...v,
+        entityName: v.entityName.trim() || found.entityName || "",
+        wikiArticles: mergeLines(v.wikiArticles, found.wikiArticles),
+        socialProfiles: mergeLines(v.socialProfiles, found.socialProfiles),
+        rivalSites: mergeLines(v.rivalSites, found.rivalSites),
+        mediaBlogs: v.mediaBlogs.trim() ? v.mediaBlogs : found.mediaBlogs.join("\n"),
+      }));
+      const counts = [
+        found.entityName ? "entité" : null,
+        found.wikiArticles.length ? `${found.wikiArticles.length} article(s) Wikipédia` : null,
+        found.socialProfiles.length ? `${found.socialProfiles.length} profil(s) social(aux)` : null,
+        found.rivalSites.length ? `${found.rivalSites.length} site(s) concurrent(s)` : null,
+      ].filter(Boolean);
+      setPrefillNote(
+        (counts.length ? `Trouvé : ${counts.join(", ")}. ` : "Rien trouvé automatiquement. ") +
+          "Relisez avant d'enregistrer : ce sont des suggestions." +
+          (found.notes.length ? ` ${found.notes.join(" · ")}` : "")
+      );
+    } catch (err) {
+      setPrefillNote(err instanceof Error ? err.message : "Échec du pré-remplissage");
+    } finally {
+      setPrefilling(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -294,6 +354,16 @@ export function ObjectiveFormDialog({
             </button>
             {showNotoriety && (
               <div className="mt-3 space-y-4">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button type="button" variant="outline" size="sm" onClick={handlePrefill} disabled={prefilling}>
+                    <Sparkles className="size-3.5" />
+                    {prefilling ? "Recherche en cours…" : "Pré-remplir automatiquement"}
+                  </Button>
+                  <span className="text-xs text-muted-foreground">
+                    {"Lit vos pages d'accueil et Wikipédia ; complète les champs sans écraser ce que vous avez saisi."}
+                  </span>
+                </div>
+                {prefillNote && <p className="text-xs text-muted-foreground">{prefillNote}</p>}
                 <Field label="Nom de l'entité" hint="Tel qu'il doit apparaître sur Wikipédia, Wikidata et la fiche Google">
                   <input
                     className={inputClass}
