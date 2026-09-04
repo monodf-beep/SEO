@@ -205,9 +205,12 @@ données Search Console.
 2. Activer l'API **Google Search Console** dans la bibliothèque d'API
 3. **Identifiants** → **Créer des identifiants** → **ID client OAuth 2.0**
 4. Type d'application : **Application Web**
-5. URI de redirection autorisée :
-   - en local : `http://localhost:3000/api/auth/callback/google`
+5. URI de redirection autorisée, **deux par environnement** : la connexion, et
+   la liaison d'autres comptes Google depuis la page Comptes Google :
+   - en local : `http://localhost:3000/api/auth/callback/google` et
+     `http://localhost:3000/api/google/link/callback`
    - en production : `https://siip.srv1697018.hstgr.cloud/api/auth/callback/google`
+     et `https://siip.srv1697018.hstgr.cloud/api/google/link/callback`
 
    ⚠️ Google n'accepte `http://` que pour `localhost`. Une IP nue ou un
    `http://` public est refusé — d'où le passage obligatoire par un domaine.
@@ -221,6 +224,20 @@ GOOGLE_CLIENT_SECRET=...
 Portées demandées par l'application : `openid`, `email`, `profile` et
 `https://www.googleapis.com/auth/webmasters.readonly` — lecture seule, CrawlSEO
 ne peut rien modifier dans la Search Console.
+
+### Plusieurs comptes Google dans un seul espace
+
+Un site lit la Search Console avec le compte Google qui possède sa propriété.
+Quand vos propriétés sont réparties entre plusieurs adresses Google, liez-les
+depuis **Comptes Google** dans le menu : chaque liaison passe par le consentement
+Google de l'adresse choisie et stocke ses jetons à part. Au moment d'ajouter un
+site, vous choisissez le compte dont il faut lister les propriétés ; le compte
+d'un site existant se change dans ses paramètres.
+
+Si un compte lié avait déjà son propre espace CrawlSEO (parce que vous vous
+étiez connecté avec cette adresse), la page propose de **rapatrier** ses sites
+avec tout leur historique. Les sites dont le domaine existe déjà chez vous sont
+laissés en place.
 
 ## 3. Démarrer
 

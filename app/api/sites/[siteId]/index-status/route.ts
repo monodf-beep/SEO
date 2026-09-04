@@ -44,7 +44,7 @@ export async function POST(
     for (const url of urls) {
       try {
         const data = await inspectUrl(
-          session.user.id,
+          { siteId },
           site.gscProperty,
           url
         );

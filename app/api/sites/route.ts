@@ -51,10 +51,21 @@ export async function POST(req: Request) {
       return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const { domain, gscProperty } = (await req.json()) as {
+    const { domain, gscProperty, googleAccountId } = (await req.json()) as {
       domain: string;
       gscProperty: string;
+      googleAccountId?: string | null;
     };
+
+    if (googleAccountId) {
+      const account = await db.googleAccount.findUnique({
+        where: { id: googleAccountId },
+        select: { userId: true },
+      });
+      if (!account || account.userId !== session.user.id) {
+        return Response.json({ error: "Compte Google introuvable" }, { status: 400 });
+      }
+    }
 
     if (!domain || !gscProperty) {
       return Response.json(
@@ -96,6 +107,7 @@ export async function POST(req: Request) {
         userId: session.user.id,
         domain,
         gscProperty,
+        googleAccountId: googleAccountId || null,
       },
       select: {
         id: true,

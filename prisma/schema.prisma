@@ -25,6 +25,27 @@ model User {
   alerts        Alert[]
   apiKeys       ApiKey[]
   objectives    Objective[]
+  googleAccounts GoogleAccount[]
+}
+
+// A Google identity linked to a CrawlSEO user. The login account is one of
+// them; further accounts are linked from the settings page so that sites
+// owned by several Google accounts live in one workspace. Tokens have the
+// same shape as User.googleTokens.
+model GoogleAccount {
+  id        String   @id @default(cuid())
+  userId    String
+  email     String
+  name      String?
+  picture   String?
+  tokens    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sites     Site[]
+
+  @@unique([userId, email])
 }
 
 model Account {
@@ -86,10 +107,12 @@ model Site {
   userId      String
   domain      String   // e.g. "brandson.digital"
   gscProperty String?  // e.g. "sc-domain:brandson.digital"
+  googleAccountId String? // which linked Google account reads Search Console; null = the login account
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  googleAccount GoogleAccount?  @relation(fields: [googleAccountId], references: [id], onDelete: SetNull)
   keywords      Keyword[]
   pages         Page[]
   crawls        Crawl[]

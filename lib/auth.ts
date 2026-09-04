@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { db } from "./db";
+import { upsertGoogleAccount } from "./google/google-auth";
 
 if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
   throw new Error("Missing Google OAuth credentials");
@@ -35,22 +36,29 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.access_token && user?.email) {
         // Save Google OAuth tokens after user is created by adapter
         try {
-          await db.user.update({
+          const tokens = {
+            accessToken: account.access_token,
+            refreshToken: account.refresh_token,
+            // account.expires_at is Unix seconds; store ms to match
+            // refreshAccessToken() and getAccessToken()'s Date.now() checks.
+            expiresAt: account.expires_at
+              ? account.expires_at * 1000
+              : undefined,
+            tokenType: account.token_type,
+            scope: account.scope,
+          };
+          const updated = await db.user.update({
             where: { email: user.email },
-            data: {
-              googleTokens: {
-                accessToken: account.access_token,
-                refreshToken: account.refresh_token,
-                // account.expires_at is Unix seconds; store ms to match
-                // refreshAccessToken() and getAccessToken()'s Date.now() checks.
-                expiresAt: account.expires_at
-                  ? account.expires_at * 1000
-                  : undefined,
-                tokenType: account.token_type,
-                scope: account.scope,
-              },
-            },
+            data: { googleTokens: tokens },
+            select: { id: true },
           });
+          // The login identity is also the first linked Google account, so
+          // the settings page lists it next to the others.
+          await upsertGoogleAccount(
+            updated.id,
+            { email: user.email, name: user.name, picture: user.image },
+            tokens
+          );
         } catch (error) {
           console.error("Failed to save Google tokens:", error);
         }

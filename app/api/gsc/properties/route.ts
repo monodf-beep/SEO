@@ -1,7 +1,8 @@
 import { auth } from "@/lib/auth";
+import { db } from "@/lib/db";
 import { listGSCProperties, ReauthRequiredError } from "@/lib/google";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = await auth();
 
@@ -9,7 +10,22 @@ export async function GET() {
       return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const properties = await listGSCProperties(session.user.id);
+    // ?account=<linked Google account id> reads that account's properties;
+    // without it, the login account's.
+    const accountId = new URL(req.url).searchParams.get("account");
+    let source: string | { accountId: string } = session.user.id;
+    if (accountId) {
+      const account = await db.googleAccount.findUnique({
+        where: { id: accountId },
+        select: { userId: true },
+      });
+      if (!account || account.userId !== session.user.id) {
+        return Response.json({ error: "Compte Google introuvable" }, { status: 404 });
+      }
+      source = { accountId };
+    }
+
+    const properties = await listGSCProperties(source);
 
     return Response.json(properties);
   } catch (error) {

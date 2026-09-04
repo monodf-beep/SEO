@@ -18,6 +18,7 @@ import {
   Link as LinkIcon,
   SearchCheck,
   Target,
+  UserCircle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -51,6 +52,7 @@ export function SidebarNav({
       { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
       { href: "/sites", label: "Sites", icon: Globe, exact: true },
       { href: "/objectives", label: "Objectifs", icon: Target },
+      { href: "/settings", label: "Comptes Google", icon: UserCircle },
     ],
   };
 

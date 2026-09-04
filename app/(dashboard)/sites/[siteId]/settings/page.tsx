@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { PageHeader } from "@/components/ui/page-header";
 import { DeleteSiteButton } from "@/components/sites/delete-site-button";
 import { ApiKeysSection } from "@/components/settings/api-keys-section";
+import { SiteAccountSelect } from "@/components/sites/site-account-select";
+import { listGoogleAccounts } from "@/lib/google/accounts";
 
 interface Props {
   params: Promise<{ siteId: string }>;
@@ -19,6 +21,7 @@ export default async function SettingsPage({ params }: Props) {
       userId: true,
       domain: true,
       gscProperty: true,
+      googleAccountId: true,
       createdAt: true,
       _count: {
         select: {
@@ -33,6 +36,8 @@ export default async function SettingsPage({ params }: Props) {
     },
   });
   if (!site || site.userId !== session?.user?.id) redirect("/sites");
+
+  const googleAccounts = await listGoogleAccounts(session.user.id);
 
   // Check API key status
   const apiKeys = await db.apiKey.findMany({
@@ -72,6 +77,16 @@ export default async function SettingsPage({ params }: Props) {
               <dt className="text-muted-foreground">Propriété GSC</dt>
               <dd className="font-medium text-foreground">
                 {site.gscProperty || "Non connectée"}
+              </dd>
+            </div>
+            <div className="flex items-center justify-between gap-4">
+              <dt className="text-muted-foreground">Compte Google (Search Console)</dt>
+              <dd>
+                <SiteAccountSelect
+                  siteId={siteId}
+                  accounts={googleAccounts.map((a) => ({ id: a.id, email: a.email, isPrimary: a.isPrimary }))}
+                  current={site.googleAccountId}
+                />
               </dd>
             </div>
             <div className="flex justify-between">

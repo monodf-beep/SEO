@@ -1,4 +1,4 @@
-import { getAccessToken } from "./google-auth";
+import { getAccessToken, type TokenSource } from "./google-auth";
 
 const URL_INSPECTION_API_BASE =
   "https://searchconsole.googleapis.com/v1/urlInspection/index:inspect";
@@ -30,11 +30,11 @@ export interface UrlInspectionResult {
  * Inspects a URL to check its index status
  */
 export async function inspectUrl(
-  userId: string,
+  source: TokenSource,
   siteUrl: string,
   inspectionUrl: string
 ): Promise<UrlInspectionResult> {
-  const accessToken = await getAccessToken(userId);
+  const accessToken = await getAccessToken(source);
 
   const response = await fetch(URL_INSPECTION_API_BASE, {
     method: "POST",
@@ -64,12 +64,12 @@ export async function inspectUrl(
  * Checks if a URL is indexed in Google
  */
 export async function isUrlIndexed(
-  userId: string,
+  source: TokenSource,
   siteUrl: string,
   inspectionUrl: string
 ): Promise<boolean> {
   try {
-    const result = await inspectUrl(userId, siteUrl, inspectionUrl);
+    const result = await inspectUrl(source, siteUrl, inspectionUrl);
 
     const coverage = result.inspectionResult?.indexStatusResult?.coverageState;
 
@@ -88,12 +88,12 @@ export async function isUrlIndexed(
  * Gets the index status for a URL
  */
 export async function getIndexStatus(
-  userId: string,
+  source: TokenSource,
   siteUrl: string,
   inspectionUrl: string
 ): Promise<string | null> {
   try {
-    const result = await inspectUrl(userId, siteUrl, inspectionUrl);
+    const result = await inspectUrl(source, siteUrl, inspectionUrl);
     return result.inspectionResult?.indexStatusResult?.coverageState || null;
   } catch {
     return null;

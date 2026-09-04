@@ -1,4 +1,4 @@
-import { getAccessToken } from "./google-auth";
+import { getAccessToken, type TokenSource } from "./google-auth";
 
 const GSC_API_BASE = "https://www.googleapis.com/webmasters/v3";
 
@@ -37,9 +37,9 @@ export interface KeywordData {
  * Lists all Google Search Console properties for a user
  */
 export async function listGSCProperties(
-  userId: string
+  source: TokenSource
 ): Promise<GSCProperty[]> {
-  const accessToken = await getAccessToken(userId);
+  const accessToken = await getAccessToken(source);
 
   const response = await fetch(`${GSC_API_BASE}/sites`, {
     headers: {
@@ -65,14 +65,14 @@ export async function listGSCProperties(
  * Fetches search analytics data from Google Search Console
  */
 export async function fetchSearchAnalytics(
-  userId: string,
+  source: TokenSource,
   siteUrl: string,
   startDate: string,
   endDate: string,
   dimensions: string[] = ["query", "page", "date", "device", "country"],
   filters?: GSCFilter[]
 ): Promise<KeywordData[]> {
-  const accessToken = await getAccessToken(userId);
+  const accessToken = await getAccessToken(source);
 
   const results: KeywordData[] = [];
   let startRow = 0;
@@ -147,12 +147,12 @@ export async function fetchSearchAnalytics(
  * Fetches search analytics aggregated by page
  */
 export async function fetchPageAnalytics(
-  userId: string,
+  source: TokenSource,
   siteUrl: string,
   startDate: string,
   endDate: string
 ): Promise<KeywordData[]> {
-  const accessToken = await getAccessToken(userId);
+  const accessToken = await getAccessToken(source);
 
   const response = await fetch(
     `${GSC_API_BASE}/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,

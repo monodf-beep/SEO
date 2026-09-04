@@ -42,13 +42,13 @@ export async function POST(req: Request) {
 
     const [keywords, pages] = await Promise.all([
       fetchSearchAnalytics(
-        session.user.id,
+        { siteId },
         site.gscProperty,
         start,
         end,
         ["query", "page", "date", "device", "country"]
       ),
-      fetchPageAnalytics(session.user.id, site.gscProperty, start, end),
+      fetchPageAnalytics({ siteId }, site.gscProperty, start, end),
     ]);
 
     // Insert/update keywords

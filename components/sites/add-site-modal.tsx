@@ -24,6 +24,12 @@ interface GSCProperty {
   permissionLevel: string;
 }
 
+interface LinkedAccount {
+  id: string;
+  email: string;
+  isPrimary: boolean;
+}
+
 export function AddSiteModal({
   triggerLabel = "Ajouter un site",
 }: {
@@ -32,6 +38,8 @@ export function AddSiteModal({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [properties, setProperties] = useState<GSCProperty[]>([]);
+  const [accounts, setAccounts] = useState<LinkedAccount[]>([]);
+  const [accountId, setAccountId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [selectedProperty, setSelectedProperty] = useState<string>("");
   const [adding, setAdding] = useState(false);
@@ -44,17 +52,42 @@ export function AddSiteModal({
       setSuccess(false);
       setError("");
       if (properties.length === 0) {
-        await loadGSCProperties();
+        const initial = await loadAccounts();
+        await loadGSCProperties(initial);
       }
     }
   }
 
-  async function loadGSCProperties() {
+  /** Linked Google accounts; the login one is selected by default. */
+  async function loadAccounts(): Promise<string> {
+    try {
+      const res = await fetch("/api/google/accounts");
+      if (!res.ok) return "";
+      const list = (await res.json()) as LinkedAccount[];
+      setAccounts(list);
+      const primary = list.find((a) => a.isPrimary) ?? list[0];
+      const id = primary?.id ?? "";
+      setAccountId(id);
+      return id;
+    } catch {
+      return "";
+    }
+  }
+
+  async function switchAccount(id: string) {
+    setAccountId(id);
+    setSelectedProperty("");
+    await loadGSCProperties(id);
+  }
+
+  async function loadGSCProperties(forAccount: string = accountId) {
     setLoading(true);
     setError("");
 
     try {
-      const response = await fetch("/api/gsc/properties");
+      const response = await fetch(
+        forAccount ? `/api/gsc/properties?account=${encodeURIComponent(forAccount)}` : "/api/gsc/properties"
+      );
       if (!response.ok) {
         const body = await response.json().catch(() => ({}));
         throw new Error(body.error || "Échec du chargement des propriétés Search Console");
@@ -110,6 +143,7 @@ export function AddSiteModal({
         body: JSON.stringify({
           domain,
           gscProperty: selectedProperty,
+          googleAccountId: accountId || null,
         }),
       });
 
@@ -158,6 +192,27 @@ export function AddSiteModal({
           {success && (
             <div className="rounded-lg border border-signal/30 bg-signal-muted px-3 py-2 text-sm text-signal">
               Site connecté. Ouverture de l'espace de travail…
+            </div>
+          )}
+
+          {accounts.length > 1 && (
+            <div>
+              <label className="mb-1 block text-[11px] font-medium uppercase tracking-[0.12em] text-muted-foreground">
+                Compte Google
+              </label>
+              <select
+                value={accountId}
+                onChange={(e) => switchAccount(e.target.value)}
+                disabled={loading || adding}
+                className="h-9 w-full rounded-lg border border-border bg-card px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.email}
+                    {a.isPrimary ? " (connexion)" : ""}
+                  </option>
+                ))}
+              </select>
             </div>
           )}
 

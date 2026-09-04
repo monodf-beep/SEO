@@ -48,13 +48,13 @@ export async function syncGSCDataForSite(
     // Fetch keywords and pages in parallel
     const [keywords, pages] = await Promise.all([
       fetchSearchAnalytics(
-        userId,
+        { siteId },
         site.gscProperty,
         start,
         end,
         ["query", "page", "date", "device", "country"]
       ),
-      fetchPageAnalytics(userId, site.gscProperty, start, end),
+      fetchPageAnalytics({ siteId }, site.gscProperty, start, end),
     ]);
 
     console.log(
