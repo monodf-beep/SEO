@@ -415,10 +415,10 @@ export function ObjectiveFormDialog({
                   <Field label="Profils sociaux" hint="URL publiques, une par ligne">
                     <textarea className={textareaClass} rows={3} value={values.socialProfiles} onChange={(e) => set("socialProfiles", e.target.value)} placeholder={"https://www.youtube.com/@…\nhttps://www.facebook.com/…"} />
                   </Field>
-                  <Field label="Blogs de médias où je peux écrire" hint="Club de Mediapart, blogs du Temps…">
+                  <Field label="Blogs de médias où je peux écrire" hint="Espace contributeur ouvert à tous, sans relation préalable. Le pré-remplissage en cherche sur vos termes (clé DataForSEO requise) ; sinon Mediapart, Le Temps, AgoraVox par défaut.">
                     <textarea className={textareaClass} rows={3} value={values.mediaBlogs} onChange={(e) => set("mediaBlogs", e.target.value)} placeholder={"mediapart.fr\nletemps.ch"} />
                   </Field>
-                  <Field label="Sites où je peux publier" hint="Vos accès contributeur">
+                  <Field label="Sites où je peux publier" hint="Vos accès personnels, existants ou à négocier — ceci ne se devine pas depuis l'extérieur, à saisir vous-même.">
                     <textarea className={textareaClass} rows={3} value={values.guestSites} onChange={(e) => set("guestSites", e.target.value)} placeholder={"mordus2savoie.com\nnosalpes.eu"} />
                   </Field>
                   <Field label="Sites concurrents" hint="Ceux qui portent le vocabulaire concurrent : écart de liens (DataForSEO)">

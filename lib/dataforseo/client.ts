@@ -286,3 +286,29 @@ export async function serpItemTypes(userId: string, keyword: string): Promise<st
   const items = Array.isArray(result.items) ? result.items : [];
   return [...new Set(items.map((i) => String(i.type ?? "")))].filter(Boolean);
 }
+
+/**
+ * URLs of the organic results for a keyword: the plain "search Google for
+ * this" primitive, reused wherever a rule needs to know what actually
+ * ranks rather than just which item types are present.
+ */
+export async function organicResults(
+  userId: string,
+  keyword: string,
+  depth = 10
+): Promise<Array<{ url: string; domain: string }> | null> {
+  const creds = await getCredentials(userId);
+  if (!creds) return null;
+
+  const locationCode = Number(process.env.DATAFORSEO_LOCATION_CODE) || 2250;
+  const languageCode = process.env.DATAFORSEO_LANGUAGE_CODE || "fr";
+  type Item = { type?: string; url?: string; domain?: string };
+  type Resp = { tasks?: Array<{ result?: Array<{ items?: Item[] }> }> };
+  const data = await dataforseoPost<Resp>(creds.login, creds.password, "/serp/google/organic/live/advanced", [
+    { keyword, location_code: locationCode, language_code: languageCode, device: "desktop", depth },
+  ]);
+  const items = data?.tasks?.[0]?.result?.[0]?.items ?? [];
+  return items
+    .filter((i) => i.type === "organic" && i.url)
+    .map((i) => ({ url: i.url!, domain: (i.domain ?? "").replace(/^www\./, "").toLowerCase() }));
+}

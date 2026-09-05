@@ -9,6 +9,7 @@
 
 import { resolveScope, type ScopedSite } from "@/lib/objectives";
 import { normalizeTerm } from "@/lib/objective-terms";
+import { organicResults } from "@/lib/dataforseo/client";
 
 const WP_API = "https://fr.wikipedia.org/w/api.php";
 const USER_AGENT = "CrawlSEO/1.0 (objective pre-fill; read-only)";
@@ -213,14 +214,15 @@ export async function suggestNotoriety(input: {
   // Creator profiles connected as sites are social profiles by definition.
   const profileUrls = allSites.filter((s) => s.kind === "PROFILE").map((s) => `https://${s.domain}`);
   const sites = allSites.filter((s) => s.kind !== "PROFILE");
-  return suggestNotorietyForSites(sites, input.focusTerms, input.rivalTerms, profileUrls);
+  return suggestNotorietyForSites(sites, input.focusTerms, input.rivalTerms, profileUrls, input.userId);
 }
 
 export async function suggestNotorietyForSites(
   sites: ScopedSite[],
   focusTerms: string[],
   rivalTerms: string[],
-  knownProfiles: string[] = []
+  knownProfiles: string[] = [],
+  userId?: string
 ): Promise<NotorietySuggestions> {
   const input = { focusTerms, rivalTerms };
   const notes: string[] = [];
@@ -292,12 +294,73 @@ export async function suggestNotorietyForSites(
     .slice(0, 8)
     .map(([h]) => h);
 
+  const mediaBlogs = await suggestGuestBlogs(userId, input.focusTerms, ownHosts, notes);
+
   return {
     entityName,
     wikiArticles,
     socialProfiles,
     rivalSites,
-    mediaBlogs: MEDIA_BLOGS_FR,
+    mediaBlogs,
     notes,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Guest-blog candidates: media with a self-service contributor space
+// ---------------------------------------------------------------------------
+
+/**
+ * "Sites où je peux publier" cannot be found automatically — it means
+ * places the user already has personal write access to, which is not a
+ * public fact any search engine indexes. What CAN be found: media whose
+ * contributor space is open to whoever asks, the same kind of platform as
+ * Mediapart's Club. A Google search for that phrasing, on the objective's
+ * own terms, surfaces real candidates instead of the same two examples for
+ * every objective — degrades to the generic French defaults without
+ * DataForSEO configured, exactly like every other DataForSEO-gated rule.
+ */
+async function suggestGuestBlogs(
+  userId: string | undefined,
+  focusTerms: string[],
+  ownHosts: string[],
+  notes: string[]
+): Promise<string[]> {
+  if (!userId || focusTerms.length === 0) return MEDIA_BLOGS_FR;
+
+  const queries = focusTerms
+    .slice(0, 2)
+    .flatMap((t) => [`${t} "blog invité"`, `${t} "tribune libre" OR "espace contributeur"`]);
+
+  const found = new Map<string, number>();
+  let configured: boolean | null = null;
+  for (const q of queries) {
+    let results: Array<{ url: string; domain: string }> | null;
+    try {
+      results = await organicResults(userId, q, 10);
+    } catch {
+      notes.push(`DataForSEO : recherche de blogs invités en échec sur « ${q} »`);
+      continue;
+    }
+    if (results === null) {
+      configured = false;
+      break;
+    }
+    configured = true;
+    for (const r of results) {
+      if (!r.domain || ownHosts.includes(r.domain) || NOT_A_RIVAL.test(r.domain) || NOT_A_RIVAL_WORDS.test(r.domain)) continue;
+      found.set(r.domain, (found.get(r.domain) ?? 0) + 1);
+    }
+  }
+
+  if (configured === false) {
+    notes.push("DataForSEO n'est pas configuré : les blogs invités ont été limités à la liste par défaut, pas recherchés sur vos termes");
+    return MEDIA_BLOGS_FR;
+  }
+  const candidates = [...found.entries()].sort((a, b) => b[1] - a[1]).map(([d]) => d).slice(0, 6);
+  if (candidates.length === 0) return MEDIA_BLOGS_FR;
+  notes.push(
+    `Blogs invités : ${candidates.length} piste(s) trouvée(s) par recherche sur vos termes, à vérifier une par une avant d'écrire (elles s'ajoutent à la liste par défaut) : ${candidates.join(", ")}`
+  );
+  return [...MEDIA_BLOGS_FR, ...candidates];
 }

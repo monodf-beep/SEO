@@ -668,6 +668,36 @@ async function presenceRules(input: NotorietyInput, hub: ScopedSite | null, note
       priority: 60,
       source: "rule:google_business_profile",
     });
+
+    // For a French non-profit specifically: two platforms an association
+    // can join itself, right away, that both carry real authority and both
+    // put a link to the entity's own site on its public page. Neither
+    // confirms a dofollow attribute in its terms; put the link up anyway —
+    // Google has treated nofollow as a hint rather than a wall since 2020,
+    // and the profile itself is worth having whatever the link does.
+    // Doesn't apply outside an association context: dismiss if it doesn't fit.
+    actions.push({
+      fingerprint: "profile:helloasso",
+      type: "PROFILE",
+      title: `Créer la page HelloAsso de ${quote(entity)} (si c'est une association)`,
+      detail:
+        `HelloAsso est la plateforme de collecte, cotisations et billetterie la plus utilisée par les associations françaises : gratuite, sans commission, avec un mini-site qui vous est propre. ` +
+        `Sa fiche associative comprend un champ site web : renseignez https://${hubLabel ?? "votre-site"}/. Pertinent uniquement si l'entité est une association ou un organisme à but non lucratif.`,
+      url: "https://www.helloasso.com/",
+      priority: 45,
+      source: "rule:association_platforms",
+    });
+    actions.push({
+      fingerprint: "profile:jeveuxaider",
+      type: "PROFILE",
+      title: `Créer la fiche de ${quote(entity)} sur jeveuxaider.gouv.fr (si c'est une association)`,
+      detail:
+        `La plateforme publique du bénévolat par la Réserve Civique, sur un domaine .gouv.fr : sa fiche organisation accepte un lien vers votre site et vos réseaux, et vous permet de publier des missions de bénévolat. ` +
+        `Une des rares occasions d'obtenir un lien depuis un domaine gouvernemental sans démarche administrative lourde. Pertinent uniquement si l'entité est une association ou accueille des bénévoles.`,
+      url: "https://www.jeveuxaider.gouv.fr/inscription/responsable?orga_type=Association",
+      priority: 45,
+      source: "rule:association_platforms",
+    });
   }
 
   if (hub) {
