@@ -200,6 +200,32 @@ export async function backlinksOverview(
 }
 
 // ---------------------------------------------------------------------------
+// Short-lived cache: every call below is billed per request
+// ---------------------------------------------------------------------------
+
+/**
+ * Declining an objective by channel recalculates seven objectives in a
+ * row — the parent and its six channels — and each one used to re-ask
+ * DataForSEO the same questions about the same domains, seven times, for
+ * one click. Every endpoint here bills per request, so that is the user's
+ * money. A few minutes of memory is enough to collapse a burst like that
+ * into a single call, and short enough that a deliberate re-run minutes
+ * later still gets fresh data.
+ */
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const cache = new Map<string, { at: number; value: unknown }>();
+
+async function cached<T>(key: string, run: () => Promise<T>): Promise<T> {
+  const hit = cache.get(key);
+  if (hit && Date.now() - hit.at < CACHE_TTL_MS) return hit.value as T;
+  const value = await run();
+  // A failed or unconfigured read is not worth remembering: the user may be
+  // adding their key right now.
+  if (value !== null) cache.set(key, { at: Date.now(), value });
+  return value;
+}
+
+// ---------------------------------------------------------------------------
 // Backlinks Profile (individual links)
 // ---------------------------------------------------------------------------
 
@@ -209,6 +235,7 @@ export async function backlinksProfile(
   limit = 50,
   offset = 0
 ): Promise<BacklinkItem[] | null> {
+  return cached(`bl:${userId}:${domain}:${limit}:${offset}`, async () => {
   const creds = await getCredentials(userId);
   if (!creds) return null;
 
@@ -233,6 +260,7 @@ export async function backlinksProfile(
     firstSeen: item.first_seen ?? null,
     lastSeen: item.last_seen ?? null,
   }));
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -246,6 +274,7 @@ export async function referringDomainsOf(
   target: string,
   limit = 100
 ): Promise<ReferringDomainItem[] | null> {
+  return cached(`rd:${userId}:${target}:${limit}`, async () => {
   const creds = await getCredentials(userId);
   if (!creds) return null;
 
@@ -260,6 +289,7 @@ export async function referringDomainsOf(
     rank: item.rank ?? 0,
     backlinks: item.backlinks ?? 0,
   }));
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -271,6 +301,7 @@ export async function referringDomainsOf(
  *  DATAFORSEO_LOCATION_CODE / DATAFORSEO_LANGUAGE_CODE, France and French
  *  by default. */
 export async function serpItemTypes(userId: string, keyword: string): Promise<string[] | null> {
+  return cached(`serp:${userId}:${keyword}`, async () => {
   const creds = await getCredentials(userId);
   if (!creds) return null;
 
@@ -285,6 +316,7 @@ export async function serpItemTypes(userId: string, keyword: string): Promise<st
   if (Array.isArray(result.item_types)) return result.item_types;
   const items = Array.isArray(result.items) ? result.items : [];
   return [...new Set(items.map((i) => String(i.type ?? "")))].filter(Boolean);
+  });
 }
 
 /**
@@ -297,6 +329,7 @@ export async function organicResults(
   keyword: string,
   depth = 10
 ): Promise<Array<{ url: string; domain: string }> | null> {
+  return cached(`org:${userId}:${keyword}:${depth}`, async () => {
   const creds = await getCredentials(userId);
   if (!creds) return null;
 
@@ -311,4 +344,5 @@ export async function organicResults(
   return items
     .filter((i) => i.type === "organic" && i.url)
     .map((i) => ({ url: i.url!, domain: (i.domain ?? "").replace(/^www\./, "").toLowerCase() }));
+  });
 }
