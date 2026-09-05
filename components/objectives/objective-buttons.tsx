@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Trash2 } from "lucide-react";
+import { Sparkles, Trash2, Archive, RotateCcw } from "lucide-react";
 
 /** Creates the objective tree of a template and opens its root. */
 export function TemplateButton({
@@ -142,7 +142,73 @@ export function AddChannelsButton({ objectiveId }: { objectiveId: string }) {
   );
 }
 
+/**
+ * "Supprimer" archives: nothing is deleted from the database, the whole
+ * subtree just leaves every normal view. A second, separate action from
+ * the archived list is the only way to actually erase it, precisely so a
+ * mis-click here is never the end of the story.
+ */
 export function DeleteObjectiveButton({
+  objectiveId,
+  hasChildren,
+}: {
+  objectiveId: string;
+  hasChildren: boolean;
+}) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  async function handleArchive() {
+    const message = hasChildren
+      ? "Archiver cet objectif et ses sous-objectifs ? Rien n'est supprimé : retrouvez-les dans Objectifs archivés, avec un bouton pour les restaurer."
+      : "Archiver cet objectif ? Rien n'est supprimé : retrouvez-le dans Objectifs archivés, avec un bouton pour le restaurer.";
+    if (!window.confirm(message)) return;
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/objectives/${objectiveId}/archive`, { method: "POST" });
+      if (!res.ok) throw new Error("Échec de l'archivage");
+      router.push("/objectives");
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Button size="sm" variant="ghost" onClick={handleArchive} disabled={loading} title="Archiver l'objectif (réversible)">
+      <Archive className="size-3.5" />
+      Archiver
+    </Button>
+  );
+}
+
+export function RestoreObjectiveButton({ objectiveId }: { objectiveId: string }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  async function handleRestore() {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/objectives/${objectiveId}/restore`, { method: "POST" });
+      if (!res.ok) throw new Error("Échec de la restauration");
+      router.refresh();
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Button size="sm" variant="outline" onClick={handleRestore} disabled={loading}>
+      <RotateCcw className="size-3.5" />
+      Restaurer
+    </Button>
+  );
+}
+
+export function PermanentlyDeleteObjectiveButton({
   objectiveId,
   hasChildren,
 }: {
@@ -154,14 +220,13 @@ export function DeleteObjectiveButton({
 
   async function handleDelete() {
     const message = hasChildren
-      ? "Supprimer cet objectif, ses sous-objectifs et toutes leurs tâches ?"
-      : "Supprimer cet objectif et ses tâches ?";
+      ? "Supprimer définitivement cet objectif, ses sous-objectifs et toutes leurs tâches ? Cette action est irréversible."
+      : "Supprimer définitivement cet objectif et ses tâches ? Cette action est irréversible.";
     if (!window.confirm(message)) return;
     setLoading(true);
     try {
       const res = await fetch(`/api/objectives/${objectiveId}`, { method: "DELETE" });
       if (!res.ok) throw new Error("Échec de la suppression");
-      router.push("/objectives");
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -170,9 +235,9 @@ export function DeleteObjectiveButton({
   }
 
   return (
-    <Button size="sm" variant="ghost" onClick={handleDelete} disabled={loading} title="Supprimer l'objectif">
+    <Button size="sm" variant="ghost" onClick={handleDelete} disabled={loading} className="text-danger hover:bg-danger/10" title="Supprimer définitivement">
       <Trash2 className="size-3.5" />
-      Supprimer
+      Supprimer définitivement
     </Button>
   );
 }

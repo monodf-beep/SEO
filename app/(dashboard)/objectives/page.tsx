@@ -17,7 +17,7 @@ type Row = {
   parentId: string | null;
   title: string;
   description: string | null;
-  status: "ACTIVE" | "PAUSED" | "DONE";
+  status: "ACTIVE" | "PAUSED" | "DONE" | "ARCHIVED";
   siteIds: string[];
   surfaces: string[];
   targetShare: number | null;
@@ -28,15 +28,15 @@ type Row = {
   kpi: ObjectiveKpi;
 };
 
-const STATUS_LABEL = { ACTIVE: "Actif", PAUSED: "En pause", DONE: "Atteint" } as const;
+const STATUS_LABEL = { ACTIVE: "Actif", PAUSED: "En pause", DONE: "Atteint", ARCHIVED: "Archivé" } as const;
 
 export default async function ObjectivesPage() {
   const session = await auth();
   const userId = session?.user?.id;
 
-  const [objectives, sites] = await Promise.all([
+  const [objectives, sites, archivedCount] = await Promise.all([
     db.objective.findMany({
-      where: { userId },
+      where: { userId, status: { not: "ARCHIVED" } },
       orderBy: { createdAt: "asc" },
       include: {
         _count: {
@@ -52,6 +52,7 @@ export default async function ObjectivesPage() {
       select: { id: true, domain: true },
       orderBy: { domain: "asc" },
     }),
+    db.objective.count({ where: { userId, status: "ARCHIVED", parentId: null } }),
   ]);
 
   const rows: Row[] = await Promise.all(
@@ -96,8 +97,9 @@ export default async function ObjectivesPage() {
     );
   }
 
-  const roots = rows.filter((r) => !r.parentId || !rows.some((p) => p.id === r.parentId));
-  const childrenOf = (id: string) => rows.filter((r) => r.parentId === id);
+  const activeRows = rows.filter((r) => r.status !== "ARCHIVED");
+  const roots = activeRows.filter((r) => !r.parentId || !activeRows.some((p) => p.id === r.parentId));
+  const childrenOf = (id: string) => activeRows.filter((r) => r.parentId === id);
   // A goal declined by channel keeps its tasks in the children: count them with it.
   const todoOf = (row: Row): number => row._count.actions + childrenOf(row.id).reduce((n, c) => n + todoOf(c), 0);
 
@@ -110,6 +112,11 @@ export default async function ObjectivesPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <DataLagBadge />
+            {archivedCount > 0 && (
+              <Link href="/objectives/archived" className="text-sm text-muted-foreground underline-offset-4 hover:underline">
+                {archivedCount} archivé{archivedCount > 1 ? "s" : ""}
+              </Link>
+            )}
             <TemplatePicker templates={templates} />
             <ObjectiveFormDialog mode="create" sites={sites} parents={parents} />
           </div>

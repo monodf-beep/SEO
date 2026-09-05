@@ -44,7 +44,7 @@ export default async function ObjectivePage({ params }: Props) {
     where: { id: objectiveId },
     include: {
       parent: { select: { id: true, title: true } },
-      children: { orderBy: { createdAt: "asc" } },
+      children: { where: { status: { not: "ARCHIVED" } }, orderBy: { createdAt: "asc" } },
     },
   });
   if (!stored || stored.userId !== userId) redirect("/objectives");
@@ -59,7 +59,7 @@ export default async function ObjectivePage({ params }: Props) {
       orderBy: { domain: "asc" },
     }),
     db.objective.findMany({
-      where: { userId },
+      where: { userId, status: { not: "ARCHIVED" } },
       select: { id: true, title: true, parentId: true },
     }),
     db.objectiveAction.findMany({
@@ -146,7 +146,7 @@ export default async function ObjectivePage({ params }: Props) {
                 targetShare:
                   objective.targetShare != null ? String(Math.round(objective.targetShare * 100)) : "",
                 deadline: objective.deadline ? objective.deadline.toISOString().slice(0, 10) : "",
-                status: objective.status,
+                status: objective.status === "ARCHIVED" ? "ACTIVE" : objective.status,
                 entityName: objective.entityName ?? "",
                 wikiArticles: objective.wikiArticles.join("\n"),
                 mediaBlogs: objective.mediaBlogs.join("\n"),

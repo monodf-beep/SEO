@@ -467,6 +467,7 @@ enum ObjectiveStatus {
   ACTIVE
   PAUSED
   DONE
+  ARCHIVED // hidden from the normal views; kept for a day before the user can hard-delete
 }
 
 enum ActionType {

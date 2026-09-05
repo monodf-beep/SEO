@@ -19,7 +19,7 @@ export async function GET(_req: Request, { params }: Ctx) {
 
     const [scope, children, actions] = await Promise.all([
       resolveScope(objective),
-      db.objective.findMany({ where: { parentId: objectiveId }, orderBy: { createdAt: "asc" } }),
+      db.objective.findMany({ where: { parentId: objectiveId, status: { not: "ARCHIVED" } }, orderBy: { createdAt: "asc" } }),
       db.objectiveAction.findMany({
         where: { objectiveId },
         orderBy: [{ status: "asc" }, { priority: "desc" }, { createdAt: "asc" }],
@@ -82,6 +82,15 @@ export async function DELETE(_req: Request, { params }: Ctx) {
     const { objectiveId } = await params;
     const objective = await requireOwnedObjective(userId, objectiveId);
     if (objective instanceof Response) return objective;
+
+    // A mis-click on delete is exactly what cost the user an entire tree
+    // once already: hard delete is only reachable from the archived list.
+    if (objective.status !== "ARCHIVED") {
+      return Response.json(
+        { error: "Archivez d'abord cet objectif ; la suppression définitive n'est possible que depuis les objectifs archivés." },
+        { status: 409 }
+      );
+    }
 
     // Children and actions cascade at the database level.
     await db.objective.delete({ where: { id: objectiveId } });

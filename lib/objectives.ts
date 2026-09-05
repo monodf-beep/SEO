@@ -739,6 +739,39 @@ export async function generateActions(
 // Sync: reconcile generated actions with the stored ones
 // ---------------------------------------------------------------------------
 
+/** Every descendant id of an objective, this one excluded. */
+async function descendantIds(objectiveId: string): Promise<string[]> {
+  const out: string[] = [];
+  const queue = [objectiveId];
+  while (queue.length) {
+    const parentId = queue.shift()!;
+    const children = await db.objective.findMany({ where: { parentId }, select: { id: true } });
+    for (const c of children) {
+      out.push(c.id);
+      queue.push(c.id);
+    }
+  }
+  return out;
+}
+
+/**
+ * Archiving is the only way "Supprimer" reaches on a first click: it hides
+ * the whole subtree from every normal view without touching a row, so a
+ * mis-click stays reversible. Hard delete is a second, separate action,
+ * only offered once an objective is already archived.
+ */
+export async function archiveObjectiveTree(objectiveId: string): Promise<string[]> {
+  const ids = [objectiveId, ...(await descendantIds(objectiveId))];
+  await db.objective.updateMany({ where: { id: { in: ids } }, data: { status: "ARCHIVED" } });
+  return ids;
+}
+
+export async function restoreObjectiveTree(objectiveId: string): Promise<string[]> {
+  const ids = [objectiveId, ...(await descendantIds(objectiveId))];
+  await db.objective.updateMany({ where: { id: { in: ids } }, data: { status: "ACTIVE" } });
+  return ids;
+}
+
 export type SyncResult = {
   created: number;
   updated: number;
