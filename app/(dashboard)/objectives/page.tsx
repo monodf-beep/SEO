@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { formatShare, getObjectiveKpi, type ObjectiveKpi } from "@/lib/objectives";
 import { objectiveTemplates } from "@/lib/objective-templates";
+import { SURFACE_LABELS, type Surface } from "@/lib/objective-surfaces";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataLagBadge } from "@/components/ui/data-lag-badge";
 import { ObjectiveFormDialog } from "@/components/objectives/objective-form-dialog";
@@ -18,6 +19,7 @@ type Row = {
   description: string | null;
   status: "ACTIVE" | "PAUSED" | "DONE";
   siteIds: string[];
+  surfaces: string[];
   targetShare: number | null;
   focusTerms: string[];
   rivalTerms: string[];
@@ -96,6 +98,8 @@ export default async function ObjectivesPage() {
 
   const roots = rows.filter((r) => !r.parentId || !rows.some((p) => p.id === r.parentId));
   const childrenOf = (id: string) => rows.filter((r) => r.parentId === id);
+  // A goal declined by channel keeps its tasks in the children: count them with it.
+  const todoOf = (row: Row): number => row._count.actions + childrenOf(row.id).reduce((n, c) => n + todoOf(c), 0);
 
   return (
     <div>
@@ -115,13 +119,13 @@ export default async function ObjectivesPage() {
       <div className="space-y-4">
         {roots.map((root) => (
           <div key={root.id} className="space-y-2">
-            <ObjectiveCard row={root} siteCount={sites.length} />
+            <ObjectiveCard row={root} siteCount={sites.length} todo={todoOf(root)} />
             {childrenOf(root.id).map((child) => (
               <div key={child.id} className="ml-4 border-l-2 border-border/60 pl-4 sm:ml-8">
-                <ObjectiveCard row={child} siteCount={sites.length} />
+                <ObjectiveCard row={child} siteCount={sites.length} todo={todoOf(child)} />
                 {childrenOf(child.id).map((grand) => (
                   <div key={grand.id} className="ml-4 mt-2 border-l-2 border-border/60 pl-4">
-                    <ObjectiveCard row={grand} siteCount={sites.length} />
+                    <ObjectiveCard row={grand} siteCount={sites.length} todo={todoOf(grand)} />
                   </div>
                 ))}
               </div>
@@ -133,7 +137,7 @@ export default async function ObjectivesPage() {
   );
 }
 
-function ObjectiveCard({ row, siteCount }: { row: Row; siteCount: number }) {
+function ObjectiveCard({ row, siteCount, todo }: { row: Row; siteCount: number; todo: number }) {
   const share = row.kpi.current.share;
   const scopeLabel =
     row.siteIds.length === 0 ? `Tous les sites (${siteCount})` : `${row.siteIds.length} site${row.siteIds.length > 1 ? "s" : ""}`;
@@ -155,6 +159,11 @@ function ObjectiveCard({ row, siteCount }: { row: Row; siteCount: number }) {
           >
             {STATUS_LABEL[row.status]}
           </span>
+          {row.surfaces.length > 0 && (
+            <span className="rounded border border-border/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+              {row.surfaces.map((s) => SURFACE_LABELS[s as Surface] ?? s).join(" · ")}
+            </span>
+          )}
           <span className="text-[11px] text-muted-foreground">{scopeLabel}</span>
           {row._count.children > 0 && (
             <span className="text-[11px] text-muted-foreground">
@@ -187,7 +196,7 @@ function ObjectiveCard({ row, siteCount }: { row: Row; siteCount: number }) {
         />
         <div className="text-right">
           <p className="text-[11px] uppercase tracking-[0.14em] text-muted-foreground">À faire</p>
-          <p className="font-heading text-2xl font-semibold text-foreground">{row._count.actions}</p>
+          <p className="font-heading text-2xl font-semibold text-foreground">{todo}</p>
         </div>
         <ChevronRight className="size-4 text-muted-foreground" />
       </div>

@@ -110,6 +110,38 @@ export function TemplatePicker({
   );
 }
 
+/** One child per channel under this objective, inheriting its goal. */
+export function AddChannelsButton({ objectiveId }: { objectiveId: string }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleClick() {
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch(`/api/objectives/${objectiveId}/channels`, { method: "POST" });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(body.error || "Échec de la déclinaison");
+      router.refresh();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Échec de la déclinaison");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Button size="sm" variant="outline" onClick={handleClick} disabled={loading} title="Un sous-objectif par canal (Sites, Réponses Google, Wikipédia et IA, Images, Réseaux, Presse), qui hérite des sites et du vocabulaire de cet objectif">
+        <Sparkles className="size-3.5" />
+        {loading ? "Création…" : "Décliner par canal"}
+      </Button>
+      {error && <span className="text-xs text-danger">{error}</span>}
+    </div>
+  );
+}
+
 export function DeleteObjectiveButton({
   objectiveId,
   hasChildren,

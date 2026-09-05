@@ -28,6 +28,11 @@ export type ObjectiveTemplateNode = {
    * domain, and the node's scope is that one site.
    */
   perSite?: boolean;
+  /**
+   * Add one child per channel (surface) under this node. Channel children
+   * carry no terms or sites of their own: they inherit the node's.
+   */
+  channels?: boolean;
 };
 
 export type ObjectiveTemplate = {
@@ -53,24 +58,14 @@ export const objectiveTemplates: ObjectiveTemplate[] = [
     key: "multicanal",
     label: "Stratégie multicanal",
     summary:
-      "Un plan d'action sur tous vos sites, sans vocabulaire imposé : Google Images, presse et blog, réseaux sociaux. La racine voit où en est chaque site et lui attribue un rôle (pivot, secondaire, naissant) ; un sous-objectif par site porte ses tâches propres — textes alternatifs, cartes de partage, balisage Article, candidature Google Actualités, liens depuis le site pivot. Ajoutez ensuite vos termes pour mesurer la part de demande.",
+      "Un but, six canaux coordonnés. La racine porte le but et son vocabulaire (à renseigner : termes à défendre, termes concurrents, entité) ; six sous-objectifs, un par canal — Sites, Réponses Google, Wikipédia et IA, Images, Réseaux, Presse — héritent de ce vocabulaire et ne gardent que leurs tâches. La racine montre le plan coordonné par sujet : pour chaque requête, la page, puis l'image, puis le post, puis le billet.",
     root: {
       title: "Stratégie multicanal",
       description:
-        "Trois canaux, un rôle par site. Images : chaque page qui gagne sur le web doit aussi gagner dans l'onglet Images. Presse et blog : du contenu balisé, daté, repris par Discover et Google Actualités, et des liens d'autorité. Réseaux : des cartes de partage sur chaque page, et le site pivot qui prête sa force aux sites naissants.",
+        "Un seul but, décliné par canal. Renseignez ici le vocabulaire à imposer et l'entité : chaque canal en hérite. Le plan coordonné par sujet, en bas de cette page, enchaîne les canaux sur chaque requête qui compte.",
       focusTerms: [],
       rivalTerms: [],
-      children: [
-        {
-          perSite: true,
-          title: "Faire progresser {domain}",
-          description:
-            "Les tâches propres à {domain} sur les trois canaux : Images (alt, visuels-réponses), presse et blog (balisage, actualités), réseaux (cartes de partage). Le rôle du site dans l'ensemble se lit sur l'objectif parent.",
-          siteMatch: ["{domain}"],
-          focusTerms: [],
-          rivalTerms: [],
-        },
-      ],
+      channels: true,
     },
   },
   {
@@ -89,6 +84,7 @@ export const objectiveTemplates: ObjectiveTemplate[] = [
       wikiArticles: ["Savoyard (langue)", "Institut de la langue savoyarde", "Francoprovençal", "Patois savoyard"],
       mediaBlogs: ["mediapart.fr", "letemps.ch"],
       guestSites: ["mordus2savoie.com", "nosalpes.eu"],
+      channels: true,
       children: [
         {
           title: "Faire de langue-savoyarde.com la référence sur la langue",

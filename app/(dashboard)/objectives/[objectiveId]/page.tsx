@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import {
+  effectiveObjective,
   formatShare,
   getObjectiveKpi,
   loadInScope,
@@ -20,7 +21,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataLagBadge } from "@/components/ui/data-lag-badge";
 import { PositionBadge, NumCell } from "@/components/ui/data-table";
 import { ObjectiveFormDialog } from "@/components/objectives/objective-form-dialog";
-import { DeleteObjectiveButton } from "@/components/objectives/objective-buttons";
+import { AddChannelsButton, DeleteObjectiveButton } from "@/components/objectives/objective-buttons";
+import { CoordinatedPlan, coordinatedTopics } from "@/components/objectives/coordinated-plan";
+import { SURFACE_LABELS, type Surface } from "@/lib/objective-surfaces";
 import { ObjectiveTasks } from "@/components/objectives/objective-tasks";
 import { ShareSparkline } from "@/components/objectives/share-sparkline";
 import { formatDeltaPercent } from "@/lib/format";
@@ -37,14 +40,17 @@ export default async function ObjectivePage({ params }: Props) {
   const userId = session?.user?.id;
   const { objectiveId } = await params;
 
-  const objective = await db.objective.findUnique({
+  const stored = await db.objective.findUnique({
     where: { id: objectiveId },
     include: {
       parent: { select: { id: true, title: true } },
       children: { orderBy: { createdAt: "asc" } },
     },
   });
-  if (!objective || objective.userId !== userId) redirect("/objectives");
+  if (!stored || stored.userId !== userId) redirect("/objectives");
+  // A channel child reads its parent's sites and vocabulary.
+  const objective = await effectiveObjective(stored);
+  const inherits = objective.surfaces.length > 0 && stored.focusTerms.length === 0 && stored.rivalTerms.length === 0 && Boolean(stored.parentId);
 
   const [sites, allObjectives, actions, scope] = await Promise.all([
     db.site.findMany({
@@ -62,13 +68,21 @@ export default async function ObjectivePage({ params }: Props) {
     }),
     resolveScope(objective),
   ]);
+  // The coordinated plan reads this objective's tasks and its children's.
+  const childIds = objective.children.map((c) => c.id);
+  const familyActions = childIds.length
+    ? await db.objectiveAction.findMany({ where: { objectiveId: { in: [objectiveId, ...childIds] } } })
+    : actions;
+  const topics = coordinatedTopics(familyActions);
+  const objectiveTitles = new Map<string, string>([[objective.id, objective.title], ...objective.children.map((c) => [c.id, c.title] as [string, string])]);
+  const hasChannelChildren = objective.children.some((c) => c.surfaces.length > 0);
 
   const [kpi, childrenKpi, scoped, health, searchTypes, aiCitations] = await Promise.all([
     getObjectiveKpi(objective, scope),
     Promise.all(
       objective.children.map(async (c) => ({
         ...c,
-        kpi: await getObjectiveKpi(c),
+        kpi: await getObjectiveKpi(await effectiveObjective(c)),
         todo: await db.objectiveAction.count({
           where: { objectiveId: c.id, status: { in: ["TODO", "IN_PROGRESS"] } },
         }),
@@ -140,6 +154,7 @@ export default async function ObjectivePage({ params }: Props) {
                 socialProfiles: objective.socialProfiles.join("\n"),
                 directories: objective.directories.join("\n"),
                 rivalSites: objective.rivalSites.join("\n"),
+                surfaces: stored.surfaces,
               }}
             />
             <DeleteObjectiveButton objectiveId={objective.id} hasChildren={objective.children.length > 0} />
@@ -153,6 +168,15 @@ export default async function ObjectivePage({ params }: Props) {
           <span className="font-medium text-foreground">Sites :</span>{" "}
           {scope.length === 0 ? "aucun" : scope.map((s) => s.domain).join(", ")}
         </span>
+        {objective.surfaces.length > 0 && (
+          <span>
+            <span className="font-medium text-foreground">Canal :</span>{" "}
+            {objective.surfaces.map((s) => SURFACE_LABELS[s as Surface] ?? s).join(", ")}
+            {inherits && objective.parent && (
+              <span className="text-muted-foreground"> · sites et vocabulaire hérités de « {objective.parent.title} »</span>
+            )}
+          </span>
+        )}
         <span>
           <span className="font-medium text-foreground">À défendre :</span>{" "}
           {objective.focusTerms.length ? objective.focusTerms.join(", ") : "—"}
@@ -193,6 +217,9 @@ export default async function ObjectivePage({ params }: Props) {
 
       {/* Cited by the answer engines */}
       <AiCitationsPanel objectiveId={objective.id} summary={aiCitations} />
+
+      {/* One subject, several channels, in order */}
+      <CoordinatedPlan topics={topics} objectiveTitles={objectiveTitles} />
 
       {/* KPI */}
       {!kpi.hasTerms ? (
@@ -291,6 +318,8 @@ export default async function ObjectivePage({ params }: Props) {
       <div className="mb-6">
         <div className="mb-3 flex items-center justify-between gap-2">
           <h3 className="font-heading text-lg font-semibold">Sous-objectifs</h3>
+          <div className="flex flex-wrap items-center gap-2">
+          {!hasChannelChildren && objective.surfaces.length === 0 && <AddChannelsButton objectiveId={objective.id} />}
           <ObjectiveFormDialog
             mode="create"
             sites={sites}
@@ -299,6 +328,7 @@ export default async function ObjectivePage({ params }: Props) {
             triggerVariant="outline"
             triggerLabel="Ajouter un sous-objectif"
           />
+          </div>
         </div>
         {childrenKpi.length === 0 ? (
           <p className="text-sm text-muted-foreground">
@@ -314,7 +344,14 @@ export default async function ObjectivePage({ params }: Props) {
                 className="panel flex items-center gap-4 p-4 transition hover:border-primary/40"
               >
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium text-foreground">{c.title}</p>
+                  <p className="font-medium text-foreground">
+                    {c.surfaces.length > 0 && (
+                      <span className="mr-2 rounded-md border border-border/60 px-1.5 py-0.5 align-middle text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                        {c.surfaces.map((s) => SURFACE_LABELS[s as Surface] ?? s).join(" · ")}
+                      </span>
+                    )}
+                    {c.title}
+                  </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {c.todo} tâche{c.todo > 1 ? "s" : ""} à faire
                     {c.kpi.hasTerms && (
@@ -333,7 +370,7 @@ export default async function ObjectivePage({ params }: Props) {
         )}
       </div>
 
-      <ObjectiveTasks objectiveId={objective.id} actions={actions} sites={sites} />
+      <ObjectiveTasks objectiveId={objective.id} actions={actions} sites={sites}  channelled={hasChannelChildren} />
     </div>
   );
 }

@@ -18,6 +18,7 @@ import { channelRules } from "@/lib/objective-channels";
 import { answerRules } from "@/lib/objective-answers";
 import { aiCitationRules } from "@/lib/ai-citations";
 import { loadCrawlHealth, siteSituations } from "@/lib/objective-sites";
+import { SURFACE_ORDER, surfaceOf, type Surface } from "@/lib/objective-surfaces";
 import { findObjectiveTemplate, type ObjectiveTemplateNode } from "@/lib/objective-templates";
 
 export const WINDOW_DAYS = 28;
@@ -754,10 +755,52 @@ export type SyncResult = {
  * rule still fires. A TODO action whose evidence disappeared is removed;
  * anything in progress or finished is kept as history.
  */
+/**
+ * A channel objective (surfaces set) that carries no sites, terms or
+ * off-site fields of its own works on its parent's: one goal, several
+ * channels, nothing typed twice. Everything that reads an objective for
+ * generation or display goes through here.
+ */
+export async function effectiveObjective<T extends Objective>(objective: T): Promise<T> {
+  if (objective.surfaces.length === 0 || !objective.parentId) return objective;
+  if (objective.focusTerms.length > 0 || objective.rivalTerms.length > 0) return objective;
+  const parent = await db.objective.findUnique({ where: { id: objective.parentId } });
+  if (!parent) return objective;
+  return {
+    ...objective,
+    siteIds: objective.siteIds.length ? objective.siteIds : parent.siteIds,
+    focusTerms: parent.focusTerms,
+    rivalTerms: parent.rivalTerms,
+    entityName: objective.entityName ?? parent.entityName,
+    wikiArticles: objective.wikiArticles.length ? objective.wikiArticles : parent.wikiArticles,
+    mediaBlogs: objective.mediaBlogs.length ? objective.mediaBlogs : parent.mediaBlogs,
+    guestSites: objective.guestSites.length ? objective.guestSites : parent.guestSites,
+    socialProfiles: objective.socialProfiles.length ? objective.socialProfiles : parent.socialProfiles,
+    directories: objective.directories.length ? objective.directories : parent.directories,
+    rivalSites: objective.rivalSites.length ? objective.rivalSites : parent.rivalSites,
+    targetShare: objective.targetShare ?? parent.targetShare,
+  };
+}
+
+/** The surfaces an objective's own task list keeps: its own, or, for a
+ *  parent, everything its channel children do not already cover. */
+export async function surfacesKept(objective: Pick<Objective, "id" | "surfaces">): Promise<Set<Surface>> {
+  if (objective.surfaces.length > 0) return new Set(objective.surfaces as Surface[]);
+  const children = await db.objective.findMany({
+    where: { parentId: objective.id, status: { not: "DONE" } },
+    select: { surfaces: true },
+  });
+  const covered = new Set(children.flatMap((c) => c.surfaces as Surface[]));
+  return new Set(SURFACE_ORDER.filter((s) => !covered.has(s)));
+}
+
 export async function syncObjectiveActions(objectiveId: string): Promise<SyncResult> {
-  const objective = await db.objective.findUniqueOrThrow({ where: { id: objectiveId } });
+  const stored = await db.objective.findUniqueOrThrow({ where: { id: objectiveId } });
+  const objective = await effectiveObjective(stored);
   const scope = await resolveScope(objective);
   const report = await generateActions(objective, scope);
+  const keptSurfaces = await surfacesKept(stored);
+  report.actions = report.actions.filter((a) => keptSurfaces.has(surfaceOf(a.source, a.type)));
 
   const existing = await db.objectiveAction.findMany({
     where: { objectiveId, fingerprint: { not: null } },
@@ -863,6 +906,63 @@ export function formatShare(share: number | null): string {
 
 /** Creates the objective tree of a template for a user and generates the
  *  first batch of actions on every node. Returns the root objective id. */
+/**
+ * One child per surface under an objective, none of them carrying terms or
+ * sites: they inherit the parent's, so the goal is typed once and every
+ * channel works towards it. Returns the ids created; skips channels that
+ * already exist under this parent.
+ */
+export async function createChannelChildren(userId: string, parentId: string): Promise<string[]> {
+  const existing = await db.objective.findMany({ where: { parentId }, select: { surfaces: true } });
+  const have = new Set(existing.flatMap((c) => c.surfaces));
+  const ids: string[] = [];
+  for (const surface of SURFACE_ORDER) {
+    if (have.has(surface)) continue;
+    const spec = CHANNEL_OBJECTIVES[surface];
+    const created = await db.objective.create({
+      data: {
+        userId,
+        parentId,
+        title: spec.title,
+        description: spec.description,
+        siteIds: [],
+        focusTerms: [],
+        rivalTerms: [],
+        surfaces: [surface],
+      },
+    });
+    ids.push(created.id);
+  }
+  return ids;
+}
+
+export const CHANNEL_OBJECTIVES: Record<Surface, { title: string; description: string }> = {
+  seo: {
+    title: "Sites : pages, positions et liens",
+    description: "Le socle : les pages qui se positionnent, celles qui manquent, le vocabulaire dans les titres, les liens entre vos sites. Tout le reste renvoie ici.",
+  },
+  aeo: {
+    title: "Réponses Google : extraits, questions, fiche",
+    description: "Être la réponse que Google affiche lui-même : questions posées, premières lignes, balisage FAQ, fiche Google de l'entité.",
+  },
+  geo: {
+    title: "Wikipédia et IA : être cité",
+    description: "Exister là où les moteurs de réponse puisent : Wikipédia, Wikidata, entité cohérente sur les profils, et la mesure « Cité par les IA ».",
+  },
+  images: {
+    title: "Images : l'onglet Images de Google",
+    description: "Textes alternatifs et visuels qui sont la réponse. Chaque image produite ici sert aussi le canal Réseaux.",
+  },
+  social: {
+    title: "Réseaux : posts, conversations, partages",
+    description: "Publier quand la demande monte, entrer dans les conversations, et des cartes de partage sur chaque page. Chaque post renvoie vers une page du site.",
+  },
+  presse: {
+    title: "Presse et blog : autorité, Actualités, Discover",
+    description: "Billets sur les médias où vous écrivez, balisage Article, candidature Google Actualités : les liens et la fraîcheur qu'aucune optimisation ne remplace.",
+  },
+};
+
 export async function createObjectiveFromTemplate(
   userId: string,
   templateKey: string
@@ -905,6 +1005,7 @@ export async function createObjectiveFromTemplate(
       },
     });
     createdIds.push(created.id);
+    if (node.channels) createdIds.push(...(await createChannelChildren(userId, created.id)));
     for (const child of node.children ?? []) {
       if (child.perSite) {
         for (const s of sites) await createNode(child, created.id, s);

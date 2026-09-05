@@ -418,6 +418,10 @@ model Objective {
   socialProfiles String[]     @default([])  // public profile URLs (YouTube, Facebook, Instagram, LinkedIn…)
   directories String[]        @default([])  // directories and listings worth an entry
   rivalSites  String[]        @default([])  // sites that own the competing vocabulary, for link gap analysis
+  // Channel objective: keeps only the tasks of these surfaces (seo, aeo, geo,
+  // images, social, presse). Empty = every surface. A channel child with no
+  // terms and no sites of its own inherits its parent's.
+  surfaces  String[] @default([])
   targetShare Float?                        // target share of demand, 0..1
   deadline    DateTime?
   status      ObjectiveStatus @default(ACTIVE)

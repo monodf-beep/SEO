@@ -56,10 +56,13 @@ export function ObjectiveTasks({
   objectiveId,
   actions,
   sites,
+  channelled = false,
 }: {
   objectiveId: string;
   actions: ObjectiveAction[];
   sites: Site[];
+  /** the objective's tasks live in its channel children */
+  channelled?: boolean;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<"todo" | "done">("todo");
@@ -194,11 +197,13 @@ export function ObjectiveTasks({
       {shown.length === 0 ? (
         <div className="px-5 py-12 text-center">
           <p className="font-medium text-foreground">
-            {tab === "todo" ? "Rien à faire pour le moment" : "Aucune tâche terminée"}
+            {tab === "todo" ? (channelled ? "Les tâches de ce but vivent dans ses canaux" : "Rien à faire pour le moment") : "Aucune tâche terminée"}
           </p>
           <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">
             {tab === "todo"
-              ? "Recalculez les tâches après une synchronisation Search Console ou un crawl, ou ajoutez une tâche manuelle."
+              ? channelled
+                ? "Chaque sous-objectif ci-dessus porte les tâches de son canal ; le plan coordonné par sujet les enchaîne. Ici ne restent que les tâches manuelles ajoutées au but lui-même."
+                : "Recalculez les tâches après une synchronisation Search Console ou un crawl, ou ajoutez une tâche manuelle."
               : "Les tâches terminées ou ignorées apparaîtront ici."}
           </p>
         </div>

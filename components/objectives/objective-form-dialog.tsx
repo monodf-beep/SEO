@@ -12,6 +12,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Pencil, Plus, Sparkles } from "lucide-react";
+import { SURFACE_HINTS, SURFACE_LABELS, SURFACE_ORDER } from "@/lib/objective-surfaces";
 
 export type ObjectiveFormValues = {
   id?: string;
@@ -31,6 +32,7 @@ export type ObjectiveFormValues = {
   socialProfiles: string;
   directories: string;
   rivalSites: string;
+  surfaces: string[];
 };
 
 const inputClass =
@@ -77,6 +79,7 @@ export function ObjectiveFormDialog({
     socialProfiles: "",
     directories: "",
     rivalSites: "",
+    surfaces: [],
     ...initial,
   });
   const [showNotoriety, setShowNotoriety] = useState(
@@ -183,6 +186,7 @@ export function ObjectiveFormDialog({
         socialProfiles: values.socialProfiles,
         directories: values.directories,
         rivalSites: values.rivalSites,
+        surfaces: values.surfaces,
         ...(mode === "edit" ? { status: values.status } : {}),
       };
       const res = await fetch(
@@ -284,6 +288,38 @@ export function ObjectiveFormDialog({
               })}
             </div>
           </Field>
+
+          {values.parentId && (
+            <Field
+              label="Canal"
+              hint={
+                values.surfaces.length === 0
+                  ? "Aucun = tous les canaux. Un sous-objectif limité à un canal hérite des sites et des termes de son parent s'il n'en a pas."
+                  : "Ne garde que les tâches de ce canal ; hérite des sites et des termes du parent si les siens sont vides."
+              }
+            >
+              <div className="flex flex-wrap gap-2">
+                {SURFACE_ORDER.map((s) => {
+                  const on = values.surfaces.includes(s);
+                  return (
+                    <button
+                      key={s}
+                      type="button"
+                      title={SURFACE_HINTS[s]}
+                      onClick={() => set("surfaces", on ? values.surfaces.filter((x) => x !== s) : [...values.surfaces, s])}
+                      className={
+                        "rounded-full border px-3 py-1 text-xs transition " +
+                        (on ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground hover:bg-muted")
+                      }
+                      aria-pressed={on}
+                    >
+                      {SURFACE_LABELS[s]}
+                    </button>
+                  );
+                })}
+              </div>
+            </Field>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Termes à défendre" hint="Un par ligne ou séparés par des virgules">

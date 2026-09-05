@@ -4,6 +4,7 @@
  */
 
 import { auth } from "@/lib/auth";
+import { SURFACE_ORDER } from "@/lib/objective-surfaces";
 import { db } from "@/lib/db";
 import { parseTerms } from "@/lib/objectives";
 
@@ -41,6 +42,7 @@ export type ObjectivePayload = {
   socialProfiles?: unknown;
   directories?: unknown;
   rivalSites?: unknown;
+  surfaces?: unknown;
 };
 
 const STATUSES = new Set(["ACTIVE", "PAUSED", "DONE"]);
@@ -73,6 +75,7 @@ export async function parseObjectivePayload(
     socialProfiles?: string[];
     directories?: string[];
     rivalSites?: string[];
+    surfaces?: string[];
   } = {};
 
   if (body.title !== undefined || !partial) {
@@ -156,6 +159,10 @@ export async function parseObjectivePayload(
       typeof body.entityName === "string" && body.entityName.trim()
         ? body.entityName.trim().slice(0, 200)
         : null;
+  }
+  if (body.surfaces !== undefined) {
+    const raw = Array.isArray(body.surfaces) ? body.surfaces : typeof body.surfaces === "string" ? body.surfaces.split(/[,\s]+/) : [];
+    data.surfaces = [...new Set(raw.filter((s): s is string => typeof s === "string" && (SURFACE_ORDER as string[]).includes(s)))];
   }
   for (const key of ["wikiArticles", "mediaBlogs", "guestSites", "socialProfiles", "directories", "rivalSites"] as const) {
     if (body[key] !== undefined) {
