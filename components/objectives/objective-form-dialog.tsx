@@ -137,6 +137,7 @@ export function ObjectiveFormDialog({
         socialProfiles: string[];
         rivalSites: string[];
         mediaBlogs: string[];
+        directories: string[];
         notes: string[];
       };
       setValues((v) => ({
@@ -146,6 +147,7 @@ export function ObjectiveFormDialog({
         socialProfiles: mergeLines(v.socialProfiles, found.socialProfiles),
         rivalSites: mergeLines(v.rivalSites, found.rivalSites),
         mediaBlogs: v.mediaBlogs.trim() ? v.mediaBlogs : found.mediaBlogs.join("\n"),
+        directories: mergeLines(v.directories, found.directories),
       }));
       const counts = [
         found.entityName ? "entité" : null,
@@ -424,7 +426,7 @@ export function ObjectiveFormDialog({
                   <Field label="Sites concurrents" hint="Ceux qui portent le vocabulaire concurrent : écart de liens (DataForSEO)">
                     <textarea className={textareaClass} rows={3} value={values.rivalSites} onChange={(e) => set("rivalSites", e.target.value)} placeholder={"arpitania.eu"} />
                   </Field>
-                  <Field label="Annuaires et listes" hint="Où l'entité devrait figurer">
+                  <Field label="Annuaires et listes" hint="Sites à forte notoriété où votre activité peut se créer une fiche gratuite. Le pré-remplissage en cherche sur vos termes (clé DataForSEO requise) : à vérifier un par un.">
                     <textarea className={textareaClass} rows={3} value={values.directories} onChange={(e) => set("directories", e.target.value)} placeholder={"annuaire-associations.fr"} />
                   </Field>
                 </div>

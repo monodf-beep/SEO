@@ -21,6 +21,7 @@ export type NotorietySuggestions = {
   socialProfiles: string[];
   rivalSites: string[];
   mediaBlogs: string[];
+  directories: string[];
   notes: string[];
 };
 
@@ -295,6 +296,7 @@ export async function suggestNotorietyForSites(
     .map(([h]) => h);
 
   const mediaBlogs = await suggestGuestBlogs(userId, input.focusTerms, ownHosts, notes);
+  const directories = await suggestDirectories(userId, input.focusTerms, entityName, ownHosts, notes);
 
   return {
     entityName,
@@ -302,8 +304,73 @@ export async function suggestNotorietyForSites(
     socialProfiles,
     rivalSites,
     mediaBlogs,
+    directories,
     notes,
   };
+}
+
+/**
+ * Where an activity can list itself for free on a site that already has
+ * authority. HelloAsso and jeveuxaider.gouv.fr are that for a French
+ * association; a bookshop, a restaurant or a musician each have their own,
+ * and no hardcoded list would ever cover them. So: search for the pattern
+ * itself, on the objective's own vocabulary, and let the ranking domains
+ * answer. Unverified leads by construction — the notes say so, and the
+ * user decides which are worth an account.
+ */
+async function suggestDirectories(
+  userId: string | undefined,
+  focusTerms: string[],
+  entityName: string | null,
+  ownHosts: string[],
+  notes: string[]
+): Promise<string[]> {
+  const subject = focusTerms[0] ?? entityName;
+  if (!userId || !subject) return [];
+
+  const queries = [
+    `${subject} annuaire`,
+    `${subject} "créer une fiche" OR "inscription gratuite" OR "référencer votre"`,
+    `${subject} fédération OR réseau OR "membres" annuaire`,
+  ];
+
+  const found = new Map<string, number>();
+  let configured: boolean | null = null;
+  for (const q of queries) {
+    let results: Array<{ url: string; domain: string }> | null;
+    try {
+      results = await organicResults(userId, q, 10);
+    } catch {
+      notes.push(`DataForSEO : recherche d'annuaires en échec sur « ${q} »`);
+      continue;
+    }
+    if (results === null) {
+      configured = false;
+      break;
+    }
+    configured = true;
+    for (const r of results) {
+      if (!r.domain || ownHosts.includes(r.domain) || NOT_A_RIVAL.test(r.domain) || NOT_A_RIVAL_WORDS.test(r.domain)) continue;
+      found.set(r.domain, (found.get(r.domain) ?? 0) + 1);
+    }
+  }
+
+  if (configured === false) {
+    notes.push("DataForSEO n'est pas configuré : les annuaires et sites d'inscription de votre activité n'ont pas été cherchés");
+    return [];
+  }
+  // A domain that comes back on more than one of these searches is far more
+  // likely to be a real directory than a one-off article that mentions one.
+  const candidates = [...found.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .filter(([, n], i) => n > 1 || i < 4)
+    .map(([d]) => d)
+    .slice(0, 8);
+  if (candidates.length === 0) return [];
+  notes.push(
+    `Annuaires : ${candidates.length} piste(s) trouvée(s) sur vos termes, à ouvrir une par une pour vérifier qu'on peut s'y inscrire et que la fiche accepte un lien : ${candidates.join(", ")}`
+  );
+  return candidates;
 }
 
 // ---------------------------------------------------------------------------
