@@ -38,6 +38,7 @@ export default async function AccountSettingsPage({ searchParams }: Props) {
   const apiKeyStatus: Record<string, { connected: boolean; updatedAt?: string }> = {
     dataforseo: { connected: false },
     apify: { connected: false },
+    gemini: { connected: false },
     perplexity: { connected: false },
     openai: { connected: false },
   };
@@ -74,6 +75,15 @@ export default async function AccountSettingsPage({ searchParams }: Props) {
           />
           <ApiKeysSection initialStatus={apiKeyStatus} />
           <ApifySection initialStatus={apiKeyStatus.apify} />
+          <ProviderKeySection
+            provider="gemini"
+            title="Gemini (Google AI Studio)"
+            description="Mesure « Cité par les IA » des objectifs : gratuit, sans carte bancaire, avec citations des sources"
+            label="Clé d'API (aistudio.google.com/apikey)"
+            placeholder="AIza…"
+            hint="Le seul des trois fournisseurs qui ne demande ni carte ni facturation : la case Google AI Studio suffit, avec 500 requêtes gratuites par jour avec recherche web."
+            initialStatus={apiKeyStatus.gemini}
+          />
           <ProviderKeySection
             provider="perplexity"
             title="Perplexity"

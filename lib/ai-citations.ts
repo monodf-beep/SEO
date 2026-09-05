@@ -16,13 +16,18 @@ import { isQuestion } from "@/lib/objective-demand";
 import { normalizeTerm } from "@/lib/objective-terms";
 import { loadInScope, resolveScope, type ScopedSite } from "@/lib/objectives";
 
-export const AI_PROVIDERS = ["perplexity", "openai"] as const;
+export const AI_PROVIDERS = ["gemini", "perplexity", "openai"] as const;
 export type AiProvider = (typeof AI_PROVIDERS)[number];
 
 export const AI_PROVIDER_LABELS: Record<AiProvider, string> = {
+  gemini: "Gemini (Google)",
   perplexity: "Perplexity",
   openai: "ChatGPT (OpenAI)",
 };
+
+/** Perplexity and OpenAI ask for a payment method before issuing a key;
+ *  Google AI Studio hands out a free, ungated key for this quota. */
+export const AI_PROVIDERS_NO_CARD: AiProvider[] = ["gemini"];
 
 const TIMEOUT_MS = 45_000;
 const MAX_PROMPTS = 8;
@@ -38,6 +43,18 @@ export async function getAiKey(userId: string, provider: AiProvider): Promise<st
 
 export async function testAiKey(provider: AiProvider, key: string): Promise<boolean> {
   try {
+    if (provider === "gemini") {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] }),
+          signal: AbortSignal.timeout(20_000),
+        }
+      );
+      return res.ok;
+    }
     if (provider === "perplexity") {
       const res = await fetch("https://api.perplexity.ai/chat/completions", {
         method: "POST",
@@ -93,10 +110,37 @@ export function buildPrompts(
 
 function hostOf(url: string): string | null {
   try {
-    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+    // Perplexity and OpenAI citations are full URLs; Gemini's grounding
+    // gives a bare domain (see askGemini) — accept both.
+    const withScheme = url.includes("://") ? url : `https://${url}`;
+    return new URL(withScheme).hostname.replace(/^www\./, "").toLowerCase();
   } catch {
     return null;
   }
+}
+
+async function askGemini(key: string, prompt: string): Promise<string[]> {
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: `Réponds en français, brièvement. ${prompt}` }] }],
+        tools: [{ google_search: {} }],
+      }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+    }
+  );
+  if (!res.ok) throw new Error(`Gemini ${res.status}`);
+  const data = (await res.json()) as {
+    candidates?: Array<{ groundingMetadata?: { groundingChunks?: Array<{ web?: { uri?: string; title?: string } }> } }>;
+  };
+  // groundingChunks.web.uri is a vertexaisearch.cloud.google.com redirect,
+  // never the source itself; .title is the one field that carries the
+  // actual domain (e.g. "lemonde.fr"), so that is what gets kept.
+  const chunks = data.candidates?.[0]?.groundingMetadata?.groundingChunks ?? [];
+  return [...new Set(chunks.map((c) => c.web?.title).filter((t): t is string => Boolean(t)))];
 }
 
 async function askPerplexity(key: string, prompt: string): Promise<string[]> {
@@ -210,7 +254,12 @@ export async function runAiCitations(objectiveId: string): Promise<{ batch: stri
     for (const prompt of prompts) {
       let citations: string[];
       try {
-        citations = provider === "perplexity" ? await askPerplexity(key, prompt) : await askOpenAI(key, prompt);
+        citations =
+          provider === "gemini"
+            ? await askGemini(key, prompt)
+            : provider === "perplexity"
+              ? await askPerplexity(key, prompt)
+              : await askOpenAI(key, prompt);
       } catch (e) {
         notes.push(`${AI_PROVIDER_LABELS[provider]} : ${e instanceof Error ? e.message : "erreur"} sur « ${prompt} »`);
         continue;

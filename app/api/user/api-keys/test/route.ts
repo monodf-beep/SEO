@@ -21,7 +21,7 @@ export async function POST(req: Request) {
     const ok =
       body.provider === "apify"
         ? await testApifyToken(body.password)
-        : body.provider === "perplexity" || body.provider === "openai"
+        : body.provider === "gemini" || body.provider === "perplexity" || body.provider === "openai"
           ? await testAiKey(body.provider, body.password)
           : await testConnection(body.login, body.password);
     return Response.json({ success: ok });

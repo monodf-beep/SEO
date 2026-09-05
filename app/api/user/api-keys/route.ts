@@ -17,6 +17,7 @@ export async function GET() {
     const providers: Record<string, { connected: boolean; updatedAt?: string }> = {
       dataforseo: { connected: false },
       apify: { connected: false },
+      gemini: { connected: false },
       perplexity: { connected: false },
       openai: { connected: false },
     };
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!["dataforseo", "apify", "perplexity", "openai"].includes(body.provider)) {
+    if (!["dataforseo", "apify", "gemini", "perplexity", "openai"].includes(body.provider)) {
       return Response.json({ error: "Fournisseur non pris en charge" }, { status: 400 });
     }
 

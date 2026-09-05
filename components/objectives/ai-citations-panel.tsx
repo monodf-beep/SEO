@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { CitationSummary } from "@/lib/ai-citations";
 
-const LABELS: Record<string, string> = { perplexity: "Perplexity", openai: "ChatGPT" };
+const LABELS: Record<string, string> = { gemini: "Gemini", perplexity: "Perplexity", openai: "ChatGPT" };
 const pct = (x: number) => `${Math.round(x * 100)} %`;
 
 /** "Cité par les IA": share of answers that cite one of the user's sites. */
@@ -41,7 +41,7 @@ export function AiCitationsPanel({ objectiveId, summary }: { objectiveId: string
         <div>
           <h3 className="font-heading text-lg font-semibold">Cité par les IA</h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Vos termes et les questions réelles posés à Perplexity et ChatGPT ; part des réponses qui citent l&apos;un de vos sites. La seule mesure directe du GEO.
+            Vos termes et les questions réelles posés à Gemini, Perplexity et ChatGPT ; part des réponses qui citent l&apos;un de vos sites. La seule mesure directe du GEO.
           </p>
         </div>
         {summary.configured.length > 0 ? (
@@ -51,7 +51,7 @@ export function AiCitationsPanel({ objectiveId, summary }: { objectiveId: string
           </Button>
         ) : (
           <Link href="/settings#api-keys" className="text-sm text-primary underline-offset-4 hover:underline">
-            Ajouter une clé Perplexity ou OpenAI
+            Ajouter une clé Gemini, Perplexity ou OpenAI
           </Link>
         )}
       </div>
