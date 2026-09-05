@@ -414,8 +414,8 @@ export function ObjectiveFormDialog({
                   <Field label="Articles Wikipédia à surveiller" hint="Titres exacts de fr.wikipedia.org">
                     <textarea className={textareaClass} rows={3} value={values.wikiArticles} onChange={(e) => set("wikiArticles", e.target.value)} placeholder={"Savoyard (langue)\nFrancoprovençal"} />
                   </Field>
-                  <Field label="Profils sociaux" hint="URL publiques, une par ligne">
-                    <textarea className={textareaClass} rows={3} value={values.socialProfiles} onChange={(e) => set("socialProfiles", e.target.value)} placeholder={"https://www.youtube.com/@…\nhttps://www.facebook.com/…"} />
+                  <Field label="Profils sociaux" hint="URL publiques, une par ligne. Instagram, TikTok et X se suivent ici : Search Console ne les expose pas par API.">
+                    <textarea className={textareaClass} rows={3} value={values.socialProfiles} onChange={(e) => set("socialProfiles", e.target.value)} placeholder={"https://www.instagram.com/…\nhttps://www.youtube.com/@…\nhttps://www.facebook.com/…"} />
                   </Field>
                   <Field label="Blogs de médias où je peux écrire" hint="Espace contributeur ouvert à tous, sans relation préalable. Le pré-remplissage en cherche sur vos termes (clé DataForSEO requise) ; sinon Mediapart, Le Temps, AgoraVox par défaut.">
                     <textarea className={textareaClass} rows={3} value={values.mediaBlogs} onChange={(e) => set("mediaBlogs", e.target.value)} placeholder={"mediapart.fr\nletemps.ch"} />

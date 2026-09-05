@@ -166,7 +166,7 @@ export function AddSiteModal({
         <DialogHeader>
           <DialogTitle>Connecter la Search Console</DialogTitle>
           <DialogDescription>
-            Choisissez une propriété que vous gérez. L'accès demandé est en lecture seule.
+            Choisissez une propriété que vous gérez. L&apos;accès demandé est en lecture seule.
           </DialogDescription>
         </DialogHeader>
 
@@ -179,7 +179,7 @@ export function AddSiteModal({
 
           {success && (
             <div className="rounded-lg border border-signal/30 bg-signal-muted px-3 py-2 text-sm text-signal">
-              Site connecté. Ouverture de l'espace de travail…
+              Site connecté. Ouverture de l&apos;espace de travail…
             </div>
           )}
 
@@ -225,6 +225,20 @@ export function AddSiteModal({
               </SelectContent>
             </Select>
           ) : null}
+
+          {/* Platform properties (Instagram, TikTok, X, YouTube) exist in the
+              Search Console interface since July 2026, but the API has no
+              representation for them: WmxSite carries only siteUrl and
+              permissionLevel, and sites.list never returns them. Offering a
+              manual property-ID field would create a site that can never
+              sync, so the modal explains the absence instead of leaving the
+              user to hunt for a property that cannot arrive. */}
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Les propriétés « plateforme » (Instagram, TikTok, X, YouTube) sont visibles
+            dans Search Console mais Google ne les expose pas encore par API : elles ne
+            peuvent pas être connectées ici. Suivez-les depuis « Profils sociaux » dans
+            vos objectifs — le canal Réseaux en tire ses tâches.
+          </p>
 
           <div className="flex justify-end gap-2 pt-2">
             <Button
