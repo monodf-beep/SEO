@@ -845,14 +845,15 @@ export async function createObjectiveFromTemplate(
   };
 
   const createdIds: string[] = [];
-  const createNode = async (node: ObjectiveTemplateNode, parentId: string | null) => {
+  const createNode = async (node: ObjectiveTemplateNode, parentId: string | null, site?: ScopedSite) => {
+    const fill = (text: string) => (site ? text.replace(/\{domain\}/g, site.domain) : text);
     const created = await db.objective.create({
       data: {
         userId,
         parentId,
-        title: node.title,
-        description: node.description ?? null,
-        siteIds: matchSites(node.siteMatch),
+        title: fill(node.title),
+        description: node.description ? fill(node.description) : null,
+        siteIds: site ? [site.id] : matchSites(node.siteMatch),
         focusTerms: node.focusTerms,
         rivalTerms: node.rivalTerms,
         targetShare: node.targetShare ?? null,
@@ -866,7 +867,13 @@ export async function createObjectiveFromTemplate(
       },
     });
     createdIds.push(created.id);
-    for (const child of node.children ?? []) await createNode(child, created.id);
+    for (const child of node.children ?? []) {
+      if (child.perSite) {
+        for (const s of sites) await createNode(child, created.id, s);
+      } else {
+        await createNode(child, created.id);
+      }
+    }
     return created.id;
   };
 

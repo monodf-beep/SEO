@@ -128,6 +128,11 @@ export function pickHub(sites: ScopedSite[], queries: QueryAgg[], focusTerms: st
     if (q.bucket === "other") continue;
     score.set(q.siteId, (score.get(q.siteId) ?? 0) + q.impressions * (q.bucket === "focus" ? 2 : 1));
   }
+  // An objective without terms has every query in "other": weigh them all.
+  if (score.size === 0) {
+    for (const q of queries) score.set(q.siteId, (score.get(q.siteId) ?? 0) + q.impressions);
+  }
+  if (score.size === 0) return null;
   return [...sites].sort((a, b) => (score.get(b.id) ?? 0) - (score.get(a.id) ?? 0))[0];
 }
 

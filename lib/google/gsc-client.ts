@@ -206,3 +206,44 @@ export async function fetchPageAnalytics(
 
   return results;
 }
+
+// ---------------------------------------------------------------------------
+// Search types: where the clicks come from (web, images, video, news, Discover)
+// ---------------------------------------------------------------------------
+
+export const SEARCH_TYPES = ["web", "image", "video", "news", "discover", "googleNews"] as const;
+export type SearchType = (typeof SEARCH_TYPES)[number];
+export type SearchTypeTotals = Partial<Record<SearchType, { clicks: number; impressions: number }>>;
+
+/**
+ * Totals per search type over a date range, one request per type. Discover
+ * and Google News return nothing until Google serves the site there, which
+ * is the point of watching them.
+ */
+export async function fetchSearchTypeTotals(
+  source: TokenSource,
+  siteUrl: string,
+  startDate: string,
+  endDate: string
+): Promise<SearchTypeTotals> {
+  const accessToken = await getAccessToken(source);
+  const out: SearchTypeTotals = {};
+  await Promise.all(
+    SEARCH_TYPES.map(async (type) => {
+      const response = await fetch(
+        `${GSC_API_BASE}/sites/${encodeURIComponent(siteUrl)}/searchAnalytics/query`,
+        {
+          method: "POST",
+          headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+          body: JSON.stringify({ startDate, endDate, type, dimensions: [], rowLimit: 1 }),
+        }
+      );
+      if (!response.ok) return;
+      const data = (await response.json()) as { rows?: Array<{ clicks: number; impressions: number }> };
+      const row = data.rows?.[0];
+      out[type] = { clicks: row?.clicks ?? 0, impressions: row?.impressions ?? 0 };
+    })
+  );
+  return out;
+}
+

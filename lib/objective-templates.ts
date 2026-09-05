@@ -22,6 +22,12 @@ export type ObjectiveTemplateNode = {
   directories?: string[];
   rivalSites?: string[];
   children?: ObjectiveTemplateNode[];
+  /**
+   * Instantiate this node once per site of the workspace instead of once:
+   * "{domain}" in the title and description is replaced by the site's
+   * domain, and the node's scope is that one site.
+   */
+  perSite?: boolean;
 };
 
 export type ObjectiveTemplate = {
@@ -43,6 +49,30 @@ const RIVAL_LANGUAGE_NAMES = [
 ];
 
 export const objectiveTemplates: ObjectiveTemplate[] = [
+  {
+    key: "multicanal",
+    label: "Stratégie multicanal",
+    summary:
+      "Un plan d'action sur tous vos sites, sans vocabulaire imposé : Google Images, presse et blog, réseaux sociaux. La racine voit où en est chaque site et lui attribue un rôle (pivot, secondaire, naissant) ; un sous-objectif par site porte ses tâches propres — textes alternatifs, cartes de partage, balisage Article, candidature Google Actualités, liens depuis le site pivot. Ajoutez ensuite vos termes pour mesurer la part de demande.",
+    root: {
+      title: "Stratégie multicanal",
+      description:
+        "Trois canaux, un rôle par site. Images : chaque page qui gagne sur le web doit aussi gagner dans l'onglet Images. Presse et blog : du contenu balisé, daté, repris par Discover et Google Actualités, et des liens d'autorité. Réseaux : des cartes de partage sur chaque page, et le site pivot qui prête sa force aux sites naissants.",
+      focusTerms: [],
+      rivalTerms: [],
+      children: [
+        {
+          perSite: true,
+          title: "Faire progresser {domain}",
+          description:
+            "Les tâches propres à {domain} sur les trois canaux : Images (alt, visuels-réponses), presse et blog (balisage, actualités), réseaux (cartes de partage). Le rôle du site dans l'ensemble se lit sur l'objectif parent.",
+          siteMatch: ["{domain}"],
+          focusTerms: [],
+          rivalTerms: [],
+        },
+      ],
+    },
+  },
   {
     key: "langue-savoyarde",
     label: "Visibilité de la langue savoyarde",

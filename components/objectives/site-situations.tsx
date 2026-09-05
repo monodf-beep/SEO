@@ -30,10 +30,11 @@ export function SiteSituations({ rows, hasTerms }: { rows: SiteSituation[]; hasT
             <tr className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground">
               <th className="py-2 text-left">Site</th>
               <th className="py-2 text-left">Rôle</th>
-              <th className="py-2 text-right">Requêtes</th>
-              <th className="py-2 text-right">Impr.</th>
-              <th className="py-2 text-right">Clics</th>
-              <th className="py-2 text-left">Meilleures positions</th>
+              <th className="py-2 pr-3 text-right">Requêtes</th>
+              <th className="py-2 pr-3 text-right">Impr.</th>
+              <th className="py-2 pr-3 text-right">Clics</th>
+              <th className="py-2 pr-3 text-left">Meilleures positions</th>
+              <th className="py-2 pr-3 text-left">Canaux (clics)</th>
               <th className="py-2 text-left">Crawl</th>
             </tr>
           </thead>
@@ -64,6 +65,9 @@ export function SiteSituations({ rows, hasTerms }: { rows: SiteSituation[]; hasT
                           « {q.query} » <span className="font-data text-foreground">pos. {q.position.toFixed(1)}</span> · {fmt(q.impressions)} impr.
                         </span>
                       ))}
+                </td>
+                <td className="py-2.5 pr-3 text-xs text-muted-foreground">
+                  <SearchTypeCell totals={r.searchTypes} />
                 </td>
                 <td className="py-2.5 text-xs text-muted-foreground">
                   {!r.crawl.crawled ? (
@@ -99,3 +103,35 @@ export function SiteSituations({ rows, hasTerms }: { rows: SiteSituation[]; hasT
     </div>
   );
 }
+
+const TYPE_LABELS: Array<[keyof NonNullable<SiteSituation["searchTypes"]>, string]> = [
+  ["web", "Web"],
+  ["image", "Images"],
+  ["video", "Vidéo"],
+  ["news", "News"],
+  ["discover", "Discover"],
+  ["googleNews", "G. Actualités"],
+];
+
+/** Where the clicks come from. Zero on Discover or News is normal until
+ *  Google serves the site there: that line is the one to watch. */
+function SearchTypeCell({ totals }: { totals: SiteSituation["searchTypes"] }) {
+  if (totals === undefined) return <span>—</span>;
+  if (totals === null) return <span title="Propriété Search Console absente ou lecture impossible">non lu</span>;
+  return (
+    <>
+      {TYPE_LABELS.map(([key, label]) => {
+        const t = totals[key];
+        if (!t) return null;
+        const on = t.clicks > 0 || t.impressions > 0;
+        return (
+          <span key={key} className={cn("block", on && key !== "web" && "text-foreground")}>
+            {label} <span className="font-data">{fmt(t.clicks)}</span>
+            {t.impressions > 0 && <span className="text-muted-foreground"> · {fmt(t.impressions)} impr.</span>}
+          </span>
+        );
+      })}
+    </>
+  );
+}
+

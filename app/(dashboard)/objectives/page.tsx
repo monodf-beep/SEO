@@ -6,7 +6,7 @@ import { objectiveTemplates } from "@/lib/objective-templates";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataLagBadge } from "@/components/ui/data-lag-badge";
 import { ObjectiveFormDialog } from "@/components/objectives/objective-form-dialog";
-import { TemplateButton } from "@/components/objectives/objective-buttons";
+import { TemplatePicker } from "@/components/objectives/objective-buttons";
 import { ShareSparkline } from "@/components/objectives/share-sparkline";
 import { cn } from "@/lib/utils";
 import { ChevronRight, Target } from "lucide-react";
@@ -57,7 +57,7 @@ export default async function ObjectivesPage() {
   );
 
   const parents = rows.map((r) => ({ id: r.id, title: r.title }));
-  const template = objectiveTemplates[0];
+  const templates = objectiveTemplates.map((t) => ({ key: t.key, label: t.label, summary: t.summary }));
 
   if (rows.length === 0) {
     return (
@@ -80,13 +80,7 @@ export default async function ObjectivesPage() {
             et de vos crawls.
           </p>
           <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
-            {template && (
-              <TemplateButton
-                templateKey={template.key}
-                label={`Modèle : ${template.label}`}
-                variant="default"
-              />
-            )}
+            <TemplatePicker templates={templates} variant="default" />
             <ObjectiveFormDialog
               mode="create"
               sites={sites}
@@ -95,9 +89,6 @@ export default async function ObjectivesPage() {
               triggerLabel="Créer un objectif vide"
             />
           </div>
-          {template && (
-            <p className="mx-auto mt-4 max-w-lg text-xs text-muted-foreground">{template.summary}</p>
-          )}
         </div>
       </div>
     );
@@ -115,6 +106,7 @@ export default async function ObjectivesPage() {
         actions={
           <div className="flex flex-wrap items-center gap-2">
             <DataLagBadge />
+            <TemplatePicker templates={templates} />
             <ObjectiveFormDialog mode="create" sites={sites} parents={parents} />
           </div>
         }

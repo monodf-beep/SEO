@@ -24,6 +24,8 @@ const fmtInt = (n: number) => n.toLocaleString("fr-FR");
 const clamp = (p: number) => Math.max(1, Math.min(100, Math.round(p)));
 const host = (d: string) => d.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/.*$/, "");
 
+const plural = (n: number, one: string, many: string) => (n === 1 ? one : many.replace("%n", fmtInt(n)));
+
 function slug(s: string): string {
   return normalizeTerm(s).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
@@ -43,7 +45,7 @@ export function channelRules(input: ChannelInput): GeneratedAction[] {
       actions.push({
         fingerprint: `channel:alt:${site.id}`,
         type: "TECHNICAL",
-        title: `Renseigner les ${fmtInt(s.crawl.imagesMissingAlt)} textes alternatifs manquants sur ${label}`,
+        title: `Renseigner ${plural(s.crawl.imagesMissingAlt, "le texte alternatif manquant", "les %n textes alternatifs manquants")} sur ${label}`,
         detail:
           `${fmtInt(s.crawl.pagesMissingAlt)} page(s) sur ${fmtInt(s.crawl.pages)} ont des images sans alt au dernier crawl. ` +
           `Google Images ne classe que ce qu'il peut lire : un alt descriptif en français, un nom de fichier parlant (bonjour-en-savoyard.webp plutôt que IMG_0234.jpg), une légende visible, et l'image dans le sitemap. ` +
@@ -81,7 +83,7 @@ export function channelRules(input: ChannelInput): GeneratedAction[] {
       actions.push({
         fingerprint: `channel:og:${site.id}`,
         type: "TECHNICAL",
-        title: `Ajouter les cartes de partage Open Graph sur ${label} (${fmtInt(s.crawl.pagesMissingSocial)} pages)`,
+        title: `Ajouter les cartes de partage Open Graph sur ${label} (${plural(s.crawl.pagesMissingSocial, "1 page", "%n pages")})`,
         detail:
           `${Math.round(ratio * 100)} % des pages crawlées n'ont pas og:title et og:image : chaque partage sur Facebook, LinkedIn ou X y est un lien nu, sans vignette. ` +
           `og:title, og:description, og:image (1200×630, URL absolue), og:url et twitter:card=summary_large_image, générés par le plugin SEO page par page. À faire avant toute campagne sociale.`,
@@ -109,7 +111,7 @@ export function channelRules(input: ChannelInput): GeneratedAction[] {
         actions.push({
           fingerprint: `channel:article:${site.id}`,
           type: "TECHNICAL",
-          title: `Baliser en Article les ${fmtInt(unmarked.length)} pages qui se positionnent sur ${label}`,
+          title: `Baliser en Article ${plural(unmarked.length, "la page qui se positionne", "les %n pages qui se positionnent")} sur ${label}`,
           detail:
             `Ces pages sont vues dans Google mais ne déclarent aucun type de contenu en JSON-LD (Article, BlogPosting, Event…). ` +
             `Le balisage Article avec headline, datePublished, dateModified, author et image ≥ 1200 px est ce que Discover et Google Actualités lisent. ` +

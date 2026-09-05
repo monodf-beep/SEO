@@ -7,6 +7,7 @@
 
 import { db } from "@/lib/db";
 import type { QueryAgg, ScopedSite } from "@/lib/objectives";
+import type { SearchTypeTotals } from "@/lib/google/gsc-client";
 
 export type SiteRole = "pivot" | "secondaire" | "naissant" | "silencieux";
 
@@ -47,6 +48,8 @@ export type SiteSituation = {
   clicks: number;
   bestQueries: Array<{ query: string; position: number; impressions: number; page: string | null }>;
   crawl: SiteCrawlHealth;
+  /** clicks by search type over the window; undefined when not requested, null when unreadable */
+  searchTypes?: SearchTypeTotals | null;
 };
 
 const ARTICLE_TYPES = /^(Article|BlogPosting|NewsArticle|ScholarlyArticle|TechArticle|Report)$/;
@@ -112,7 +115,8 @@ export function siteSituations(
   sites: ScopedSite[],
   inScope: QueryAgg[],
   health: Map<string, SiteCrawlHealth>,
-  hub: ScopedSite | null
+  hub: ScopedSite | null,
+  searchTypes?: Map<string, SearchTypeTotals | null>
 ): SiteSituation[] {
   const rows: SiteSituation[] = sites.map((site) => {
     const mine = inScope.filter((a) => a.siteId === site.id);
@@ -131,6 +135,7 @@ export function siteSituations(
       clicks,
       bestQueries,
       crawl: health.get(site.id) ?? emptyHealth(),
+      searchTypes: searchTypes ? (searchTypes.get(site.id) ?? null) : undefined,
     };
   });
   const top = Math.max(1, ...rows.map((r) => r.impressions));
