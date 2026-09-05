@@ -58,7 +58,12 @@ export async function listGSCProperties(
 
   const data = (await response.json()) as { siteEntry?: GSCProperty[] };
 
-  return data.siteEntry || [];
+  // Search Console now also lists creator profiles (sc-creator-profile:
+  // instagram.com/…, youtube channels). They carry no crawlable domain and
+  // their analytics have a different shape: only websites belong here.
+  return (data.siteEntry || []).filter(
+    (p) => p.siteUrl.startsWith("sc-domain:") || /^https?:\/\//i.test(p.siteUrl)
+  );
 }
 
 /**
