@@ -251,6 +251,8 @@ model AuditPage {
   externalLinks   Int     @default(0)
 
   hasSchema       Boolean @default(false)
+  schemaTypes     String[] @default([])  // JSON-LD @type values found on the page
+  hasSocialMeta   Boolean @default(false) // og:title + og:image present
   hreflangTags    Json?   // Array of hreflang values
 
   contentScore    Int     @default(0)  // 0-100
@@ -312,6 +314,7 @@ enum IssueType {
   MISSING_ROBOTS        // No robots.txt
   MISSING_SITEMAP       // No sitemap.xml
   MISSING_SCHEMA        // No structured data
+  MISSING_SOCIAL_META   // No Open Graph / Twitter Card tags: shares show no card
   SLOW_PAGE             // Load time > 3s
   MIXED_CONTENT         // HTTP resources on HTTPS page
   LARGE_PAGE            // Page size > 3MB

@@ -46,6 +46,10 @@ type PageSnapshot = {
   externalOutlinks: string[];
   links: LinkInfo[];
   hasSchema: boolean;
+  /** JSON-LD @type values, e.g. Organization, Article, Event */
+  schemaTypes: string[];
+  /** og:title and og:image both present: a share gets a card */
+  hasSocialMeta: boolean;
   hreflangTags: { lang: string; href: string }[];
   imageCount: number;
   imagesMissingAlt: number;
@@ -54,6 +58,37 @@ type PageSnapshot = {
   contentHash: string;
   indexable: boolean;
 };
+
+/* ------------------------------------------------------------------ */
+/*  Structured data                                                   */
+/* ------------------------------------------------------------------ */
+
+/** Every @type declared in the page's JSON-LD blocks, @graph included. */
+function extractSchemaTypes(html: string): string[] {
+  const types = new Set<string>();
+  const blocks = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) ?? [];
+  for (const block of blocks) {
+    const body = block.replace(/^<script[^>]*>/i, "").replace(/<\/script>$/i, "").trim();
+    let json: unknown;
+    try {
+      json = JSON.parse(body);
+    } catch {
+      // Malformed JSON-LD is common; read the @type strings out of the text.
+      for (const m of body.matchAll(/"@type"\s*:\s*"([A-Za-z]+)"/g)) types.add(m[1]);
+      continue;
+    }
+    const walk = (n: unknown) => {
+      if (Array.isArray(n)) return n.forEach(walk);
+      if (!n || typeof n !== "object") return;
+      const t = (n as { "@type"?: unknown })["@type"];
+      if (typeof t === "string") types.add(t);
+      else if (Array.isArray(t)) t.forEach((x) => typeof x === "string" && types.add(x));
+      for (const v of Object.values(n as Record<string, unknown>)) if (v && typeof v === "object") walk(v);
+    };
+    walk(json);
+  }
+  return [...types].slice(0, 30);
+}
 
 /* ------------------------------------------------------------------ */
 /*  URL helpers                                                       */
@@ -224,6 +259,13 @@ function parseHtml(
     /application\/ld\+json/i.test(html) ||
     /\bitemscope\b/i.test(html) ||
     /\bitemtype\b/i.test(html);
+  const schemaTypes = extractSchemaTypes(html);
+
+  // A share on Facebook, LinkedIn or X renders a card only from these tags.
+  const hasOg = (prop: string) =>
+    new RegExp(`<meta[^>]+property=["']og:${prop}["'][^>]+content=["'][^"']+["']`, "i").test(html) ||
+    new RegExp(`<meta[^>]+content=["'][^"']+["'][^>]+property=["']og:${prop}["']`, "i").test(html);
+  const hasSocialMeta = hasOg("title") && hasOg("image");
 
   // hreflang tags
   const hreflangTags = [
@@ -331,6 +373,8 @@ function parseHtml(
     externalOutlinks: [...new Set(externalOutlinks)],
     links,
     hasSchema,
+    schemaTypes,
+    hasSocialMeta,
     hreflangTags,
     imageCount,
     imagesMissingAlt,
@@ -553,6 +597,16 @@ function issuesFromPage(page: PageSnapshot, _seedOrigin: string): IssueInput[] {
       severity: "INFO",
       message: "No structured data (JSON-LD / microdata)",
       details: rem("MISSING_SCHEMA"),
+    });
+  }
+
+  if (!page.hasSocialMeta) {
+    issues.push({
+      url,
+      type: "MISSING_SOCIAL_META",
+      severity: "WARNING",
+      message: "No Open Graph card (og:title and og:image)",
+      details: rem("MISSING_SOCIAL_META"),
     });
   }
 
@@ -967,6 +1021,8 @@ async function executeCrawl(
           internalLinks: p.internalOutlinks.length,
           externalLinks: p.externalOutlinks.length,
           hasSchema: p.hasSchema,
+          schemaTypes: p.schemaTypes,
+          hasSocialMeta: p.hasSocialMeta,
           hreflangTags: p.hreflangTags.length > 0 ? p.hreflangTags : undefined,
           contentScore: p.contentScore,
           contentHash: p.contentHash,

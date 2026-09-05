@@ -1,0 +1,6 @@
+-- AlterEnum
+ALTER TYPE "IssueType" ADD VALUE 'MISSING_SOCIAL_META';
+
+-- AlterTable
+ALTER TABLE "AuditPage" ADD COLUMN "schemaTypes" TEXT[] DEFAULT ARRAY[]::TEXT[],
+ADD COLUMN "hasSocialMeta" BOOLEAN NOT NULL DEFAULT false;

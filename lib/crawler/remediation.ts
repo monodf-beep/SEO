@@ -44,6 +44,11 @@ export const REMEDIATION: Record<string, { title: string; howToFix: string }> = 
     howToFix:
       "Ajoutez un attribut alt descriptif à toutes les balises <img>. Utilisez un texte concis qui décrit le contenu de l'image. Pour les images décoratives, utilisez un attribut alt=\"\" vide.",
   },
+  MISSING_SOCIAL_META: {
+    title: "Pas de carte de partage (Open Graph)",
+    howToFix:
+      "Ajoutez dans le <head> les balises og:title, og:description, og:image (image de 1200×630 px, URL absolue) et og:url, plus <meta name=\"twitter:card\" content=\"summary_large_image\">. Sans elles, chaque partage sur Facebook, LinkedIn ou X est un lien nu sans vignette. Un plugin SEO (Yoast, Rank Math) les génère page par page.",
+  },
   MISSING_CANONICAL: {
     title: "Balise canonical manquante",
     howToFix:
