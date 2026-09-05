@@ -45,7 +45,7 @@ export async function testAiKey(provider: AiProvider, key: string): Promise<bool
   try {
     if (provider === "gemini") {
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${encodeURIComponent(key)}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -53,7 +53,9 @@ export async function testAiKey(provider: AiProvider, key: string): Promise<bool
           signal: AbortSignal.timeout(20_000),
         }
       );
-      return res.ok;
+      // A wrong key still answers with 400/403, not 404: a working key plus
+      // an unrecognised model name shouldn't be reported as "clé refusée".
+      return res.ok || res.status === 400 || res.status === 403;
     }
     if (provider === "perplexity") {
       const res = await fetch("https://api.perplexity.ai/chat/completions", {
@@ -119,20 +121,31 @@ function hostOf(url: string): string | null {
   }
 }
 
+// "-latest" aliases are Google's own answer to how fast Gemini model names
+// churn (2.5 -> 3.x already, mid-2026): they get hot-swapped server-side
+// with two weeks' notice, so this rarely needs to change by hand. Falls
+// back to the versioned flash line if an alias ever 404s.
+const GEMINI_MODEL = "gemini-flash-latest";
+const GEMINI_MODEL_FALLBACKS = ["gemini-flash-latest", "gemini-pro-latest", "gemini-2.5-flash"];
+
 async function askGemini(key: string, prompt: string): Promise<string[]> {
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(key)}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: `Réponds en français, brièvement. ${prompt}` }] }],
-        tools: [{ google_search: {} }],
-      }),
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-    }
-  );
-  if (!res.ok) throw new Error(`Gemini ${res.status}`);
+  let res: Response | null = null;
+  for (const model of GEMINI_MODEL_FALLBACKS) {
+    res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(key)}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: `Réponds en français, brièvement. ${prompt}` }] }],
+          tools: [{ google_search: {} }],
+        }),
+        signal: AbortSignal.timeout(TIMEOUT_MS),
+      }
+    );
+    if (res.status !== 404) break;
+  }
+  if (!res || !res.ok) throw new Error(`Gemini ${res?.status ?? "?"}`);
   const data = (await res.json()) as {
     candidates?: Array<{ groundingMetadata?: { groundingChunks?: Array<{ web?: { uri?: string; title?: string } }> } }>;
   };
