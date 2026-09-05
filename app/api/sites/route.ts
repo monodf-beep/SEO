@@ -79,7 +79,9 @@ export async function POST(req: Request) {
     if (kind === "PROFILE") {
       // A creator profile is never fetched by CrawlSEO itself, so the SSRF
       // guard does not apply; the property shape is what matters.
-      if (!gscProperty.startsWith("sc-creator-profile:") || !/^[a-z0-9.-]+\/[^\s/]+/i.test(domain)) {
+      // Whatever prefix Google uses for platform properties, the only thing
+      // that has to hold is that there is something to identify it by.
+      if (!domain.trim()) {
         return Response.json({ error: "Profil de créateur invalide" }, { status: 400 });
       }
     } else {

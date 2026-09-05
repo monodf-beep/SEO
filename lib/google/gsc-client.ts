@@ -60,14 +60,20 @@ export async function listGSCProperties(
 
   // Websites (domain or URL prefix) and creator profiles (Instagram, YouTube:
   // sc-creator-profile:instagram.com/handle). Anything else is unknown.
-  return (data.siteEntry || []).filter((p) => propertyKind(p.siteUrl) !== null);
+  // Never filtered. A property Google returns and CrawlSEO hides is a
+  // property the user cannot understand the absence of — which is exactly
+  // what happened with the Instagram profile: the shape Google actually
+  // sends was not the one guessed here, so it silently vanished from the
+  // list. Anything that is not a crawlable website is treated as a profile.
+  return data.siteEntry || [];
 }
 
-/** What a Search Console property is, or null when the shape is unknown. */
-export function propertyKind(siteUrl: string): "WEBSITE" | "PROFILE" | null {
+/** A property is a website when it is a domain or a URL prefix; anything
+ *  else Search Console exposes (creator and platform profiles) has no site
+ *  to crawl and is handled as a profile, whatever prefix Google gives it. */
+export function propertyKind(siteUrl: string): "WEBSITE" | "PROFILE" {
   if (siteUrl.startsWith("sc-domain:") || /^https?:\/\//i.test(siteUrl)) return "WEBSITE";
-  if (siteUrl.startsWith("sc-creator-profile:")) return "PROFILE";
-  return null;
+  return "PROFILE";
 }
 
 /**
@@ -76,24 +82,27 @@ export function propertyKind(siteUrl: string): "WEBSITE" | "PROFILE" | null {
  */
 export function propertyDomain(siteUrl: string): string {
   if (siteUrl.startsWith("sc-domain:")) return siteUrl.slice("sc-domain:".length);
-  if (siteUrl.startsWith("sc-creator-profile:")) {
-    return siteUrl.slice("sc-creator-profile:".length).replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "");
+  if (/^https?:\/\//i.test(siteUrl)) {
+    try {
+      return new URL(siteUrl).hostname;
+    } catch {
+      return siteUrl;
+    }
   }
-  try {
-    return new URL(siteUrl).hostname;
-  } catch {
-    return siteUrl;
-  }
+  // Any other shape: drop the "sc-something:" prefix Google puts in front,
+  // keep the rest as the readable identity.
+  const rest = siteUrl.replace(/^sc-[a-z-]+:/i, "");
+  return rest.replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "") || siteUrl;
 }
 
 /** "@handle · Instagram" for a creator profile, the property itself otherwise. */
 export function propertyLabel(siteUrl: string): string {
-  if (!siteUrl.startsWith("sc-creator-profile:")) return siteUrl;
+  if (propertyKind(siteUrl) === "WEBSITE") return siteUrl;
   const rest = propertyDomain(siteUrl);
   const [host, ...path] = rest.split("/");
   const handle = path.join("/");
-  const network = /instagram/.test(host) ? "Instagram" : /youtube/.test(host) ? "YouTube" : /tiktok/.test(host) ? "TikTok" : host;
-  return `@${handle} · ${network} (profil)`;
+  const network = /instagram/i.test(host) ? "Instagram" : /youtube/i.test(host) ? "YouTube" : /tiktok/i.test(host) ? "TikTok" : host;
+  return handle ? `@${handle} · ${network} (profil)` : `${rest} (profil)`;
 }
 
 /**
