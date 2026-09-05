@@ -2,10 +2,15 @@
  * Conversations to join: recent public posts and videos about the
  * objective's vocabulary, on networks with an open read API.
  *
- * - YouTube through the official Data API (YOUTUBE_API_KEY)
- * - Bluesky through its public AppView, no key
- * - Reddit through its public JSON search, which refuses most server IPs;
- *   a refusal is reported, never retried in a loop
+ * - YouTube through the official Data API
+ * - Bluesky through bsky.social, signed in with an app password
+ * - Reddit through oauth.reddit.com, with a script app's client credentials
+ *
+ * The public read paths of Reddit and Bluesky answer 403 to a datacenter
+ * IP whatever the User-Agent — measured with a browser User-Agent, refused
+ * identically — so all three now go through a credential the user holds.
+ * Each is free and needs no card; a missing one is reported as a note with
+ * the place to get it, never retried in a loop.
  *
  * Facebook, Instagram, LinkedIn, TikTok and X expose nothing readable
  * without a login and forbid automated reading. They are reached only
@@ -15,6 +20,13 @@
  */
 
 import { getApifyToken, runActorItems } from "@/lib/apify/client";
+import {
+  BLUESKY_HOST,
+  REDDIT_API_HOST,
+  blueskyToken,
+  redditToken,
+  youtubeKey,
+} from "@/lib/social-keys";
 import { matchesAny, normalizeTerm } from "@/lib/objective-terms";
 import type { GeneratedAction } from "@/lib/objectives";
 
@@ -50,14 +62,22 @@ function isFreshEnough(iso: string | null | undefined): iso is string {
   return iso != null && daysAgo(iso) <= MAX_AGE_DAYS;
 }
 
-async function getJson(url: string, notes: string[], label: string, headers: Record<string, string> = {}) {
+async function getJson(
+  url: string,
+  notes: string[],
+  label: string,
+  headers: Record<string, string> = {},
+  /** Turns a status into a note that says what to do about it. Without it a
+   *  bare code is reported, which tells the user nothing actionable. */
+  explain?: (status: number) => string | null
+) {
   try {
     const res = await fetch(url, {
       headers: { "User-Agent": USER_AGENT, Accept: "application/json", ...headers },
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
     if (!res.ok) {
-      notes.push(`${label} : réponse ${res.status}, recherche sautée`);
+      notes.push(explain?.(res.status) ?? `${label} : réponse ${res.status}, recherche sautée`);
       return null;
     }
     return (await res.json()) as Record<string, unknown>;
@@ -85,10 +105,12 @@ type YtSearchItem = {
 };
 
 async function youtubeRules(input: ConversationInput, notes: string[]): Promise<GeneratedAction[]> {
-  const key = process.env.YOUTUBE_API_KEY;
+  const key = await youtubeKey(input.userId);
   const actions: GeneratedAction[] = [];
   if (!key) {
-    notes.push("YOUTUBE_API_KEY absent : les vidéos récentes sur le sujet et votre chaîne n'ont pas été lues");
+    notes.push(
+      "Clé YouTube absente : les vidéos récentes sur le sujet et votre chaîne n'ont pas été lues — Paramètres du compte, Services externes"
+    );
     return actions;
   }
   const focusLabel = input.focusTerms[0] ?? null;
@@ -194,10 +216,22 @@ type BskyPost = {
 
 async function blueskyRules(input: ConversationInput, notes: string[]): Promise<GeneratedAction[]> {
   const actions: GeneratedAction[] = [];
+  const token = await blueskyToken(input.userId);
+  if (!token) {
+    notes.push(
+      "Bluesky non connecté : la recherche publique refuse les IP de serveur, un mot de passe d'application suffit — Paramètres du compte, Services externes"
+    );
+    return actions;
+  }
+  const auth = { Authorization: `Bearer ${token}` };
   const focusLabel = input.focusTerms[0] ?? null;
   for (const term of searchTerms(input)) {
-    const url = `https://public.api.bsky.app/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent(`"${term}"`)}&sort=latest&limit=5`;
-    const data = await getJson(url, notes, `Bluesky (${term})`);
+    const url = `${BLUESKY_HOST}/xrpc/app.bsky.feed.searchPosts?q=${encodeURIComponent(`"${term}"`)}&sort=latest&limit=5`;
+    const data = await getJson(url, notes, `Bluesky (${term})`, auth, (status) =>
+      status === 400 || status === 401
+        ? "Bluesky a refusé la session : le mot de passe d'application a peut-être été révoqué, à refaire dans Paramètres du compte"
+        : `Bluesky (${term}) : réponse ${status}, recherche sautée`
+    );
     const posts = ((data as { posts?: BskyPost[] } | null)?.posts ?? [])
       .filter((p) => isFreshEnough(p.record?.createdAt))
       .sort((a, b) => Date.parse(b.record!.createdAt!) - Date.parse(a.record!.createdAt!));
@@ -233,10 +267,28 @@ type RedditChild = { data?: { id?: string; title?: string; subreddit?: string; p
 
 async function redditRules(input: ConversationInput, notes: string[]): Promise<GeneratedAction[]> {
   const actions: GeneratedAction[] = [];
+  const token = await redditToken(input.userId);
+  if (!token) {
+    notes.push(
+      "Reddit non connecté : la recherche publique refuse les IP de serveur, une application « script » suffit — Paramètres du compte, Services externes"
+    );
+    return actions;
+  }
+  const auth = { Authorization: `Bearer ${token}` };
   const focusLabel = input.focusTerms[0] ?? null;
   for (const term of searchTerms(input)) {
-    const url = `https://www.reddit.com/search.json?q=${encodeURIComponent(`"${term}"`)}&sort=new&t=month&limit=5`;
-    const data = await getJson(url, notes, `Reddit (${term})`);
+    const url = `${REDDIT_API_HOST}/search?q=${encodeURIComponent(`"${term}"`)}&sort=new&t=month&limit=5`;
+    // Reddit serves a "Blocked" page from oauth.reddit.com to some server
+    // IPs even with a valid token — measured, and indistinguishable from an
+    // auth failure by status alone. Saying so is the only way the user knows
+    // that fixing the credentials will not help.
+    const data = await getJson(url, notes, `Reddit (${term})`, auth, (status) =>
+      status === 403
+        ? "Reddit refuse l'IP de ce serveur même authentifié : rien à corriger dans vos identifiants, seul un changement d'hébergement ou un relais y changerait quelque chose"
+        : status === 401
+          ? "Reddit a refusé les identifiants : vérifiez le client ID et le secret dans Paramètres du compte"
+          : `Reddit (${term}) : réponse ${status}, recherche sautée`
+    );
     const children = ((data as { data?: { children?: RedditChild[] } } | null)?.data?.children ?? [])
       .filter((c) => c.data?.id && c.data.created_utc && isFreshEnough(new Date(c.data.created_utc * 1000).toISOString()))
       .sort((a, b) => (b.data!.created_utc ?? 0) - (a.data!.created_utc ?? 0));

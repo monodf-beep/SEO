@@ -12,6 +12,8 @@ export function ProviderKeySection({
   description,
   label,
   placeholder,
+  loginLabel,
+  loginPlaceholder,
   hint,
   initialStatus,
 }: {
@@ -20,19 +22,28 @@ export function ProviderKeySection({
   description: string;
   label: string;
   placeholder: string;
+  /** Set for a service that needs an identifier as well as a secret (a
+   *  Bluesky handle, a Reddit client id). Left unset, the stored login is
+   *  the placeholder "token" the single-secret services use. */
+  loginLabel?: string;
+  loginPlaceholder?: string;
   hint?: string;
   initialStatus: Status;
 }) {
   const [status, setStatus] = useState<Status>(initialStatus);
   const [token, setToken] = useState("");
+  const [login, setLogin] = useState("");
   const [testing, setTesting] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [testResult, setTestResult] = useState<boolean | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const ready = Boolean(token) && (!loginLabel || Boolean(login));
+  const sentLogin = loginLabel ? login : "token";
+
   async function handleTest() {
-    if (!token) return;
+    if (!ready) return;
     setTesting(true);
     setTestResult(null);
     setError(null);
@@ -40,7 +51,7 @@ export function ProviderKeySection({
       const res = await fetch("/api/user/api-keys/test", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, login: "token", password: token }),
+        body: JSON.stringify({ provider, login: sentLogin, password: token }),
       });
       const data = await res.json();
       setTestResult(Boolean(data.success));
@@ -54,14 +65,14 @@ export function ProviderKeySection({
   }
 
   async function handleSave() {
-    if (!token) return;
+    if (!ready) return;
     setSaving(true);
     setError(null);
     try {
       const res = await fetch("/api/user/api-keys", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ provider, login: "token", password: token }),
+        body: JSON.stringify({ provider, login: sentLogin, password: token }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -69,6 +80,7 @@ export function ProviderKeySection({
       }
       setStatus({ connected: true, updatedAt: new Date().toISOString() });
       setToken("");
+      setLogin("");
       setTestResult(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Échec de l'enregistrement");
@@ -135,6 +147,12 @@ export function ProviderKeySection({
         </div>
       ) : (
         <div className="mt-4 space-y-3">
+          {loginLabel && (
+            <div>
+              <label className="mb-1 block text-xs font-medium text-muted-foreground">{loginLabel}</label>
+              <input type="text" value={login} onChange={(e) => setLogin(e.target.value)} placeholder={loginPlaceholder} className={input} />
+            </div>
+          )}
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">{label}</label>
             <input type="password" value={token} onChange={(e) => setToken(e.target.value)} placeholder={placeholder} className={input} />
@@ -150,7 +168,7 @@ export function ProviderKeySection({
             <button
               type="button"
               onClick={handleTest}
-              disabled={!token || testing}
+              disabled={!ready || testing}
               className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted disabled:opacity-50"
             >
               {testing ? <Loader2 className="size-3 animate-spin" /> : <FlaskConical className="size-3" />}
@@ -159,7 +177,7 @@ export function ProviderKeySection({
             <button
               type="button"
               onClick={handleSave}
-              disabled={!token || saving}
+              disabled={!ready || saving}
               className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground transition hover:bg-primary/90 disabled:opacity-50"
             >
               {saving ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3" />}

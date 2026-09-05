@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { encrypt } from "@/lib/encryption";
+import { API_PROVIDERS } from "@/lib/api-providers";
 
 export async function GET() {
   try {
@@ -14,13 +15,8 @@ export async function GET() {
       select: { provider: true, createdAt: true, updatedAt: true },
     });
 
-    const providers: Record<string, { connected: boolean; updatedAt?: string }> = {
-      dataforseo: { connected: false },
-      apify: { connected: false },
-      gemini: { connected: false },
-      perplexity: { connected: false },
-      openai: { connected: false },
-    };
+    const providers: Record<string, { connected: boolean; updatedAt?: string }> =
+      Object.fromEntries(API_PROVIDERS.map((p) => [p, { connected: false }]));
 
     for (const key of keys) {
       providers[key.provider] = {
@@ -56,7 +52,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!["dataforseo", "apify", "gemini", "perplexity", "openai"].includes(body.provider)) {
+    if (!(API_PROVIDERS as readonly string[]).includes(body.provider)) {
       return Response.json({ error: "Fournisseur non pris en charge" }, { status: 400 });
     }
 

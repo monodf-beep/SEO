@@ -8,6 +8,7 @@ import { ApiKeysSection } from "@/components/settings/api-keys-section";
 import { ApifySection } from "@/components/settings/apify-section";
 import { ProviderKeySection } from "@/components/settings/provider-key-section";
 import { McpPageContent } from "@/components/mcp/mcp-page-content";
+import { API_PROVIDERS } from "@/lib/api-providers";
 
 interface Props {
   searchParams: Promise<{ linked?: string; error?: string }>;
@@ -35,13 +36,8 @@ export default async function AccountSettingsPage({ searchParams }: Props) {
     where: { userId: session.user.id },
     select: { provider: true, updatedAt: true },
   });
-  const apiKeyStatus: Record<string, { connected: boolean; updatedAt?: string }> = {
-    dataforseo: { connected: false },
-    apify: { connected: false },
-    gemini: { connected: false },
-    perplexity: { connected: false },
-    openai: { connected: false },
-  };
+  const apiKeyStatus: Record<string, { connected: boolean; updatedAt?: string }> =
+    Object.fromEntries(API_PROVIDERS.map((p) => [p, { connected: false }]));
   for (const key of apiKeys) {
     apiKeyStatus[key.provider] = { connected: true, updatedAt: key.updatedAt.toISOString() };
   }
@@ -101,6 +97,37 @@ export default async function AccountSettingsPage({ searchParams }: Props) {
             placeholder="sk-…"
             hint="Une mesure pose jusqu'à huit questions à gpt-4.1-mini avec l'outil de recherche web : quelques centimes."
             initialStatus={apiKeyStatus.openai}
+          />
+          <ProviderKeySection
+            provider="bluesky"
+            title="Bluesky"
+            description="Conversations à rejoindre : les posts récents qui parlent de vos termes"
+            loginLabel="Identifiant (votre handle)"
+            loginPlaceholder="vous.bsky.social"
+            label="Mot de passe d'application (Paramètres, App Passwords)"
+            placeholder="xxxx-xxxx-xxxx-xxxx"
+            hint="Gratuit, sans carte. La recherche publique de Bluesky refuse les IP de serveur : c'est la connexion qui débloque, pas un réglage. N'utilisez pas votre mot de passe principal — un mot de passe d'application se révoque seul."
+            initialStatus={apiKeyStatus.bluesky}
+          />
+          <ProviderKeySection
+            provider="reddit"
+            title="Reddit"
+            description="Conversations à rejoindre : les fils récents qui parlent de vos termes, et que Google remonte dans « Discussions et forums »"
+            loginLabel="Client ID (reddit.com/prefs/apps)"
+            loginPlaceholder="14 caractères sous le nom de l'app"
+            label="Client secret"
+            placeholder="27 caractères"
+            hint="Gratuit, sans carte. Créez une application de type « script » : le client ID s'affiche sous son nom. Comme Bluesky, la recherche publique refuse les IP de serveur."
+            initialStatus={apiKeyStatus.reddit}
+          />
+          <ProviderKeySection
+            provider="youtube"
+            title="YouTube (Data API)"
+            description="Vidéos récentes sur vos termes, à commenter, et suivi de votre chaîne"
+            label="Clé d'API (console.cloud.google.com, API YouTube Data v3)"
+            placeholder="AIza…"
+            hint="Gratuit, sans carte, 10 000 unités par jour — une recherche en coûte 100. Une clé posée ici remplace la variable YOUTUBE_API_KEY du serveur."
+            initialStatus={apiKeyStatus.youtube}
           />
         </section>
 

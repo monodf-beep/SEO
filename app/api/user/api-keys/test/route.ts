@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { testConnection } from "@/lib/dataforseo/client";
 import { testApifyToken } from "@/lib/apify/client";
 import { testAiKey } from "@/lib/ai-citations";
+import { SOCIAL_PROVIDERS, testSocialKey, type SocialProvider } from "@/lib/social-keys";
 
 export async function POST(req: Request) {
   try {
@@ -23,7 +24,9 @@ export async function POST(req: Request) {
         ? await testApifyToken(body.password)
         : body.provider === "gemini" || body.provider === "perplexity" || body.provider === "openai"
           ? await testAiKey(body.provider, body.password)
-          : await testConnection(body.login, body.password);
+          : (SOCIAL_PROVIDERS as readonly string[]).includes(body.provider ?? "")
+            ? await testSocialKey(body.provider as SocialProvider, body.login, body.password)
+            : await testConnection(body.login, body.password);
     return Response.json({ success: ok });
   } catch (error) {
     console.error("API key test error:", error);
