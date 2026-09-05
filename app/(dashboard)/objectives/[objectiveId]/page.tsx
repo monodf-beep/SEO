@@ -14,6 +14,8 @@ import { pickHub } from "@/lib/objective-notoriety";
 import { loadCrawlHealth, siteSituations } from "@/lib/objective-sites";
 import { searchTypesForSites } from "@/lib/objective-search-types";
 import { SiteSituations } from "@/components/objectives/site-situations";
+import { AiCitationsPanel } from "@/components/objectives/ai-citations-panel";
+import { latestAiCitations } from "@/lib/ai-citations";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataLagBadge } from "@/components/ui/data-lag-badge";
 import { PositionBadge, NumCell } from "@/components/ui/data-table";
@@ -61,7 +63,7 @@ export default async function ObjectivePage({ params }: Props) {
     resolveScope(objective),
   ]);
 
-  const [kpi, childrenKpi, scoped, health, searchTypes] = await Promise.all([
+  const [kpi, childrenKpi, scoped, health, searchTypes, aiCitations] = await Promise.all([
     getObjectiveKpi(objective, scope),
     Promise.all(
       objective.children.map(async (c) => ({
@@ -75,6 +77,7 @@ export default async function ObjectivePage({ params }: Props) {
     loadInScope(objective, scope),
     loadCrawlHealth(scope),
     searchTypesForSites(scope),
+    latestAiCitations(objective.id, userId!),
   ]);
   const situations = siteSituations(scope, scoped.inScope, health, pickHub(scope, scoped.inScope, objective.focusTerms), searchTypes);
 
@@ -187,6 +190,9 @@ export default async function ObjectivePage({ params }: Props) {
 
       {/* Where each site stands */}
       <SiteSituations rows={situations} hasTerms={scoped.hasTerms} />
+
+      {/* Cited by the answer engines */}
+      <AiCitationsPanel objectiveId={objective.id} summary={aiCitations} />
 
       {/* KPI */}
       {!kpi.hasTerms ? (

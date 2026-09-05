@@ -1,6 +1,7 @@
 import { auth } from "@/lib/auth";
 import { testConnection } from "@/lib/dataforseo/client";
 import { testApifyToken } from "@/lib/apify/client";
+import { testAiKey } from "@/lib/ai-citations";
 
 export async function POST(req: Request) {
   try {
@@ -20,7 +21,9 @@ export async function POST(req: Request) {
     const ok =
       body.provider === "apify"
         ? await testApifyToken(body.password)
-        : await testConnection(body.login, body.password);
+        : body.provider === "perplexity" || body.provider === "openai"
+          ? await testAiKey(body.provider, body.password)
+          : await testConnection(body.login, body.password);
     return Response.json({ success: ok });
   } catch (error) {
     console.error("API key test error:", error);

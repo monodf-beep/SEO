@@ -53,6 +53,8 @@ type PageSnapshot = {
   hreflangTags: { lang: string; href: string }[];
   imageCount: number;
   imagesMissingAlt: number;
+  /** the ~300 words that follow the H1: what a reader (and an answer engine) sees first */
+  intro: string | null;
   bytes: number;
   loadMs: number;
   contentHash: string;
@@ -62,6 +64,20 @@ type PageSnapshot = {
 /* ------------------------------------------------------------------ */
 /*  Structured data                                                   */
 /* ------------------------------------------------------------------ */
+
+/** The 300 words after the first H1 (or the first 300 words): the answer
+ *  has to be there for a snippet, an AI Overview or a chatbot to lift it. */
+function extractIntro(bodyText: string, h1s: string[]): string | null {
+  if (!bodyText) return null;
+  let start = 0;
+  const h1 = h1s[0]?.trim();
+  if (h1 && h1.length >= 8) {
+    const idx = bodyText.indexOf(h1);
+    if (idx >= 0) start = idx + h1.length;
+  }
+  const words = bodyText.slice(start).split(/\s+/).filter(Boolean).slice(0, 300);
+  return words.length ? words.join(" ").slice(0, 2500) : null;
+}
 
 /** Every @type declared in the page's JSON-LD blocks, @graph included. */
 function extractSchemaTypes(html: string): string[] {
@@ -294,6 +310,7 @@ function parseHtml(
 
   // Body text and word count
   const bodyText = stripTags(html);
+  const intro = extractIntro(bodyText, h1s);
   const words = bodyText ? bodyText.split(/\s+/).filter(Boolean) : [];
   const wordCount = words.length;
 
@@ -378,6 +395,7 @@ function parseHtml(
     hreflangTags,
     imageCount,
     imagesMissingAlt,
+    intro,
     bytes,
     loadMs,
     contentHash,
@@ -1016,6 +1034,7 @@ async function executeCrawl(
           h1Count: p.h1s.length,
           h1s: p.h1s,
           wordCount: p.wordCount,
+          intro: p.intro,
           imageCount: p.imageCount,
           imagesMissingAlt: p.imagesMissingAlt,
           internalLinks: p.internalOutlinks.length,
@@ -1084,6 +1103,7 @@ async function executeCrawl(
           kind: "content_score",
           contentScore: p.contentScore,
           wordCount: p.wordCount,
+          intro: p.intro,
           title: p.title,
           h1Count: p.h1s.length,
         },
@@ -1107,6 +1127,7 @@ async function executeCrawl(
           title: p.title,
           contentScore: p.contentScore,
           wordCount: p.wordCount,
+          intro: p.intro,
           outlinks: p.internalOutlinks.length,
           externalOutlinks: p.externalOutlinks.length,
           inlinks: inlinkCount.get(p.url) || 0,

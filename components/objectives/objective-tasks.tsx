@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { ACTION_TYPE_LABELS } from "@/lib/objectives";
+import { SURFACE_HINTS, SURFACE_LABELS, SURFACE_ORDER, surfaceOf, type Surface } from "@/lib/objective-surfaces";
 import { cn } from "@/lib/utils";
 import { Check, ExternalLink, Play, Plus, RefreshCw, RotateCcw, Trash2, X } from "lucide-react";
 
@@ -29,6 +30,7 @@ const TYPE_ORDER: ActionType[] = [
   "PROFILE",
   "SOCIAL",
   "TECHNICAL",
+  "AI_VISIBILITY",
   "OTHER",
 ];
 
@@ -43,6 +45,7 @@ const typeTone: Record<ActionType, string> = {
   PROFILE: "bg-info/15 text-info",
   SOCIAL: "bg-primary/15 text-primary",
   TECHNICAL: "bg-danger/15 text-danger",
+  AI_VISIBILITY: "bg-fuchsia-500/15 text-fuchsia-700 dark:text-fuchsia-300",
   OTHER: "bg-muted text-muted-foreground",
 };
 
@@ -61,6 +64,7 @@ export function ObjectiveTasks({
   const router = useRouter();
   const [tab, setTab] = useState<"todo" | "done">("todo");
   const [typeFilter, setTypeFilter] = useState<ActionType | "ALL">("ALL");
+  const [surfaceFilter, setSurfaceFilter] = useState<Surface | "ALL">("ALL");
   const [busy, setBusy] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [notice, setNotice] = useState("");
@@ -69,10 +73,15 @@ export function ObjectiveTasks({
 
   const open = actions.filter((a) => a.status === "TODO" || a.status === "IN_PROGRESS");
   const closed = actions.filter((a) => a.status === "DONE" || a.status === "DISMISSED");
-  const shown = (tab === "todo" ? open : closed).filter(
-    (a) => typeFilter === "ALL" || a.type === typeFilter
+  const pool = tab === "todo" ? open : closed;
+  const shown = pool.filter(
+    (a) =>
+      (typeFilter === "ALL" || a.type === typeFilter) &&
+      (surfaceFilter === "ALL" || surfaceOf(a.source, a.type) === surfaceFilter)
   );
-  const typesPresent = TYPE_ORDER.filter((t) => (tab === "todo" ? open : closed).some((a) => a.type === t));
+  const typesPresent = TYPE_ORDER.filter((t) => pool.some((a) => a.type === t));
+  const surfacesPresent = SURFACE_ORDER.filter((sf) => pool.some((a) => surfaceOf(a.source, a.type) === sf));
+  const countBySurface = (sf: Surface) => pool.filter((a) => surfaceOf(a.source, a.type) === sf).length;
 
   async function setStatus(action: ObjectiveAction, status: ActionStatus) {
     setBusy(action.id);
@@ -153,6 +162,22 @@ export function ObjectiveTasks({
         </p>
       )}
 
+      {surfacesPresent.length > 1 && (
+        <div className="flex flex-wrap items-center gap-1.5 border-b border-border/60 px-5 py-3">
+          <span className="mr-1 text-[11px] uppercase tracking-[0.12em] text-muted-foreground">Surface</span>
+          <FilterChip active={surfaceFilter === "ALL"} onClick={() => setSurfaceFilter("ALL")}>
+            Toutes
+          </FilterChip>
+          {surfacesPresent.map((sf) => (
+            <span key={sf} title={SURFACE_HINTS[sf]}>
+              <FilterChip active={surfaceFilter === sf} onClick={() => setSurfaceFilter(sf)}>
+                {SURFACE_LABELS[sf]} · {countBySurface(sf)}
+              </FilterChip>
+            </span>
+          ))}
+        </div>
+      )}
+
       {typesPresent.length > 1 && (
         <div className="flex flex-wrap gap-1.5 border-b border-border/60 px-5 py-3">
           <FilterChip active={typeFilter === "ALL"} onClick={() => setTypeFilter("ALL")}>
@@ -190,6 +215,12 @@ export function ObjectiveTasks({
                     )}
                   >
                     {ACTION_TYPE_LABELS[a.type]}
+                  </span>
+                  <span
+                    className="rounded-md border border-border/60 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+                    title={SURFACE_HINTS[surfaceOf(a.source, a.type)]}
+                  >
+                    {SURFACE_LABELS[surfaceOf(a.source, a.type)]}
                   </span>
                   {a.status === "IN_PROGRESS" && (
                     <span className="rounded-md bg-info/15 px-2 py-0.5 text-[10px] font-semibold uppercase text-info">

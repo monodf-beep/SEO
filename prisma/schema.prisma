@@ -254,6 +254,7 @@ model AuditPage {
   hasSchema       Boolean @default(false)
   schemaTypes     String[] @default([])  // JSON-LD @type values found on the page
   hasSocialMeta   Boolean @default(false) // og:title + og:image present
+  intro           String? // first ~300 words after the H1: does the page answer up front?
   hreflangTags    Json?   // Array of hreflang values
 
   contentScore    Int     @default(0)  // 0-100
@@ -427,6 +428,7 @@ model Objective {
   parent      Objective?      @relation("ObjectiveTree", fields: [parentId], references: [id], onDelete: Cascade)
   children    Objective[]     @relation("ObjectiveTree")
   actions     ObjectiveAction[]
+  aiCitations AiCitationRun[]
 
   @@index([userId])
   @@index([parentId])
@@ -474,6 +476,7 @@ enum ActionType {
   PROFILE          // Google Business Profile, directories, social profiles, entity markup
   SOCIAL           // a post, video or comment on a social network
   TECHNICAL        // crawl / vitals fix
+  AI_VISIBILITY    // be cited by answer engines (ChatGPT, Perplexity) on a prompt
   OTHER
 }
 
@@ -482,4 +485,23 @@ enum ActionStatus {
   IN_PROGRESS
   DONE
   DISMISSED
+}
+
+// One prompt put to one answer engine, and who it cited. Runs are grouped by
+// createdAt; the objective page reads the latest run per provider.
+model AiCitationRun {
+  id             String   @id @default(cuid())
+  objectiveId    String
+  provider       String   // "perplexity" | "openai"
+  batch          String   // one measurement = one batch id across prompts and providers
+  prompt         String
+  citedOwn       Boolean  @default(false)
+  citedWikipedia Boolean  @default(false)
+  citations      String[] @default([])
+  createdAt      DateTime @default(now())
+
+  objective      Objective @relation(fields: [objectiveId], references: [id], onDelete: Cascade)
+
+  @@index([objectiveId, createdAt])
+  @@index([objectiveId, batch])
 }

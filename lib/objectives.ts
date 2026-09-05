@@ -15,6 +15,8 @@ import { generateNotorietyActions, pickHub, referringDomainsOfSites } from "@/li
 import { generateDemandActions } from "@/lib/objective-demand";
 import { generateConversationActions } from "@/lib/objective-conversations";
 import { channelRules } from "@/lib/objective-channels";
+import { answerRules } from "@/lib/objective-answers";
+import { aiCitationRules } from "@/lib/ai-citations";
 import { loadCrawlHealth, siteSituations } from "@/lib/objective-sites";
 import { findObjectiveTemplate, type ObjectiveTemplateNode } from "@/lib/objective-templates";
 
@@ -356,6 +358,7 @@ export type PageMeta = {
   schemaTypes: string[];
   hasSocialMeta: boolean;
   imagesMissingAlt: number;
+  intro: string | null;
 };
 
 /** Title / meta / H1 of every page in the latest completed crawl per site. */
@@ -383,6 +386,7 @@ async function loadLatestPageMeta(
         schemaTypes: true,
         hasSocialMeta: true,
         imagesMissingAlt: true,
+        intro: true,
       },
     });
     for (const p of pages) {
@@ -395,6 +399,7 @@ async function loadLatestPageMeta(
         schemaTypes: p.schemaTypes ?? [],
         hasSocialMeta: p.hasSocialMeta,
         imagesMissingAlt: p.imagesMissingAlt,
+        intro: p.intro,
       });
     }
   }
@@ -424,7 +429,7 @@ export type ObjectiveForRules = Pick<
   | "socialProfiles"
   | "directories"
   | "rivalSites"
->;
+> & { id?: string };
 
 /**
  * The (site, query) aggregates an objective reasons about, for the current
@@ -700,6 +705,19 @@ export async function generateActions(
   const situations = siteSituations(sites, inScope, await loadCrawlHealth(sites), hub);
   for (const a of channelRules({ situations, queries: inScope, hub, focusTerms: objective.focusTerms, meta, canonicalUrl })) push(a);
 
+  // Answers (AEO): the opening lines and the FAQ markup of the pages that rank on questions.
+  const answers = answerRules({ sites, queries: inScope, meta, canonicalUrl });
+  // The crawl-verified check supersedes the generic "answer this question" task on the same query.
+  const verified = new Set(answers.filter((a) => a.source === "rule:answer_first").map((a) => normalizeTerm(a.query ?? "")));
+  for (let i = actions.length - 1; i >= 0; i--) {
+    const a = actions[i];
+    if (a.source === "rule:question" && verified.has(normalizeTerm(a.query ?? ""))) actions.splice(i, 1);
+  }
+  for (const a of answers) push(a);
+
+  // Answer engines (GEO): the prompts of the latest measurement no site of ours is cited on.
+  if (objective.id) for (const a of await aiCitationRules(objective.id, sites)) push(a);
+
   if (objective.focusTerms.length > 0 || objective.rivalTerms.length > 0) {
     const conversations = await generateConversationActions({
       userId: objective.userId,
@@ -823,6 +841,7 @@ export const ACTION_TYPE_LABELS: Record<ActionType, string> = {
   PROFILE: "Fiche / profil",
   SOCIAL: "Réseaux sociaux",
   TECHNICAL: "Technique",
+  AI_VISIBILITY: "Visibilité IA",
   OTHER: "Autre",
 };
 

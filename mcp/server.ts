@@ -473,6 +473,7 @@ const ACTION_TYPES = [
   "PROFILE",
   "SOCIAL",
   "TECHNICAL",
+  "AI_VISIBILITY",
   "OTHER",
 ] as const;
 
