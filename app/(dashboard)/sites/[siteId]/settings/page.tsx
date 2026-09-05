@@ -1,10 +1,9 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { DeleteSiteButton } from "@/components/sites/delete-site-button";
-import { ApiKeysSection } from "@/components/settings/api-keys-section";
-import { ApifySection } from "@/components/settings/apify-section";
 import { SiteAccountSelect } from "@/components/sites/site-account-select";
 import { listGoogleAccounts } from "@/lib/google/accounts";
 
@@ -40,28 +39,12 @@ export default async function SettingsPage({ params }: Props) {
 
   const googleAccounts = await listGoogleAccounts(session.user.id);
 
-  // Check API key status
-  const apiKeys = await db.apiKey.findMany({
-    where: { userId: session.user.id },
-    select: { provider: true, updatedAt: true },
-  });
-  const apiKeyStatus: Record<string, { connected: boolean; updatedAt?: string }> = {
-    dataforseo: { connected: false },
-    apify: { connected: false },
-  };
-  for (const key of apiKeys) {
-    apiKeyStatus[key.provider] = {
-      connected: true,
-      updatedAt: key.updatedAt.toISOString(),
-    };
-  }
-
   return (
     <div>
       <PageHeader
         eyebrow={site.domain}
-        title="Paramètres"
-        description="Configuration du site et gestion des données"
+        title="Paramètres du site"
+        description="Compte Google de la propriété, données stockées, suppression"
       />
 
       <div className="space-y-6">
@@ -104,9 +87,14 @@ export default async function SettingsPage({ params }: Props) {
           </dl>
         </div>
 
-        {/* External API Keys */}
-        <ApiKeysSection initialStatus={apiKeyStatus} />
-        <ApifySection initialStatus={apiKeyStatus.apify} />
+        {/* API keys and the MCP connection are workspace-level: see /settings */}
+        <p className="text-sm text-muted-foreground">
+          Les clés DataForSEO et Apify et la connexion des agents IA (MCP) se règlent dans{" "}
+          <Link href="/settings" className="text-primary underline-offset-4 hover:underline">
+            Paramètres du compte
+          </Link>
+          .
+        </p>
 
         {/* Data summary */}
         <div className="panel p-5">

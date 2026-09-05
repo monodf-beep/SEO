@@ -71,7 +71,7 @@ export function BacklinksClient({
             <p className="mt-0.5 text-muted-foreground">
               Add a DataForSEO API key in{" "}
               <Link
-                href={`/sites/${siteId}/settings`}
+                href="/settings#api-keys"
                 className="text-primary underline underline-offset-2"
               >
                 Paramètres

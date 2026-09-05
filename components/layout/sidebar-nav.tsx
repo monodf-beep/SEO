@@ -14,11 +14,9 @@ import {
   Bell,
   Settings,
   Bookmark,
-  Bot,
   Link as LinkIcon,
   SearchCheck,
   Target,
-  UserCircle,
   type LucideIcon,
 } from "lucide-react";
 
@@ -52,7 +50,7 @@ export function SidebarNav({
       { href: "/dashboard", label: "Tableau de bord", icon: LayoutDashboard },
       { href: "/sites", label: "Sites", icon: Globe, exact: true },
       { href: "/objectives", label: "Objectifs", icon: Target },
-      { href: "/settings", label: "Comptes Google", icon: UserCircle },
+      { href: "/settings", label: "Paramètres du compte", icon: Settings },
     ],
   };
 
@@ -68,6 +66,7 @@ export function SidebarNav({
           { href: `/sites/${activeSiteId}/vitals`, label: "Vitals", icon: Gauge },
           { href: `/sites/${activeSiteId}/opportunities`, label: "Opportunités", icon: Lightbulb },
           { href: `/sites/${activeSiteId}/alerts`, label: "Alertes", icon: Bell },
+          { href: `/sites/${activeSiteId}/settings`, label: "Paramètres du site", icon: Settings },
         ],
       }
     : null;
@@ -83,17 +82,7 @@ export function SidebarNav({
       }
     : null;
 
-  const connectNav: NavGroup | null = activeSiteId
-    ? {
-        label: "Connexion",
-        items: [
-          { href: `/sites/${activeSiteId}/mcp`, label: "IA & MCP", icon: Bot },
-          { href: `/sites/${activeSiteId}/settings`, label: "Paramètres", icon: Settings },
-        ],
-      }
-    : null;
-
-  const groups = [overviewNav, workspaceNav, researchNav, connectNav].filter(
+  const groups = [overviewNav, workspaceNav, researchNav].filter(
     (g): g is NavGroup => g !== null
   );
 
