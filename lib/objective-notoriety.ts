@@ -63,6 +63,30 @@ function hostOf(input: string): string {
   }
 }
 
+/**
+ * How a social profile is named in a task title. Two profiles on the same
+ * network are the common case (an organisation account and a personal one),
+ * and "instagram.com" alone makes their tasks indistinguishable in the list:
+ * the handle is the only part that tells them apart, so it goes in the title.
+ */
+function profileLabel(url: string): string {
+  const host = hostOf(url);
+  const path = url
+    .trim()
+    .replace(/^https?:\/\//i, "")
+    .replace(/^www\./i, "")
+    .replace(/^[^/]+/, "")
+    .replace(/^\/+/, "")
+    .replace(/\/+$/, "");
+  if (!path) return host;
+  // The whole path, not its first segment: "linkedin.com/in" and
+  // "facebook.com/people" name a route, not an account. Long paths are
+  // trimmed rather than shortened structurally, so what is shown is always
+  // a real prefix of the real address.
+  const full = `${host}/${path}`;
+  return full.length > 52 ? `${full.slice(0, 51)}…` : full;
+}
+
 function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -722,13 +746,14 @@ async function presenceRules(input: NotorietyInput, hub: ScopedSite | null, note
   for (const raw of objective.socialProfiles) {
     const url = raw.includes("://") ? raw.trim() : `https://${raw.trim()}`;
     const domain = hostOf(url);
+    const label = profileLabel(url);
     const card = await fetchProfileCard(url, notes);
     const fp = `profile:social:${normalizeTerm(url.replace(/^https?:\/\//, ""))}`;
     if (!card || !card.ok || (!card.title && !card.description)) {
       actions.push({
         fingerprint: fp,
         type: "PROFILE",
-        title: `Vérifier à la main le profil ${domain}`,
+        title: `Vérifier à la main le profil ${label}`,
         detail:
           `${domain} ne laisse pas lire la carte publique du profil sans connexion${card ? ` (réponse ${card.status})` : ""}. ` +
           `À vérifier vous-même : le nom affiché${entity ? ` est ${quote(entity)}` : ""}, la description nomme ${quote(focusLabel ?? "votre terme")}, le lien pointe vers https://${hubLabel ?? "votre-site"}/, et la photo est la même que sur les autres profils.`,
@@ -744,7 +769,7 @@ async function presenceRules(input: NotorietyInput, hub: ScopedSite | null, note
       actions.push({
         fingerprint: fp,
         type: "PROFILE",
-        title: `Nommer ${missing.map(quote).join(" et ")} sur le profil ${domain}`,
+        title: `Nommer ${missing.map(quote).join(" et ")} sur le profil ${label}`,
         detail:
           `Carte publique actuelle : « ${card.title || "(sans titre)"} » · ${card.description ? `« ${card.description.slice(0, 160)} »` : "(sans description)"}. ` +
           `Le nom et la description du profil sont ce que Google indexe sur la requête marque : ils doivent porter le même vocabulaire que le site.`,
