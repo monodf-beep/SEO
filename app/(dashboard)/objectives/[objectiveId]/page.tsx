@@ -5,10 +5,14 @@ import { db } from "@/lib/db";
 import {
   formatShare,
   getObjectiveKpi,
+  loadInScope,
   resolveScope,
   type Bucket,
   type QueryRow,
 } from "@/lib/objectives";
+import { pickHub } from "@/lib/objective-notoriety";
+import { loadCrawlHealth, siteSituations } from "@/lib/objective-sites";
+import { SiteSituations } from "@/components/objectives/site-situations";
 import { PageHeader } from "@/components/ui/page-header";
 import { DataLagBadge } from "@/components/ui/data-lag-badge";
 import { PositionBadge, NumCell } from "@/components/ui/data-table";
@@ -56,7 +60,7 @@ export default async function ObjectivePage({ params }: Props) {
     resolveScope(objective),
   ]);
 
-  const [kpi, childrenKpi] = await Promise.all([
+  const [kpi, childrenKpi, scoped, health] = await Promise.all([
     getObjectiveKpi(objective, scope),
     Promise.all(
       objective.children.map(async (c) => ({
@@ -67,7 +71,10 @@ export default async function ObjectivePage({ params }: Props) {
         }),
       }))
     ),
+    loadInScope(objective, scope),
+    loadCrawlHealth(scope),
   ]);
+  const situations = siteSituations(scope, scoped.inScope, health, pickHub(scope, scoped.inScope, objective.focusTerms));
 
   // Anything under this objective cannot become its parent.
   const descendants = new Set<string>();
@@ -175,6 +182,9 @@ export default async function ObjectivePage({ params }: Props) {
           </span>
         )}
       </div>
+
+      {/* Where each site stands */}
+      <SiteSituations rows={situations} hasTerms={scoped.hasTerms} />
 
       {/* KPI */}
       {!kpi.hasTerms ? (

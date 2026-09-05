@@ -14,6 +14,8 @@ import type { ActionType, Objective, ObjectiveAction } from "@prisma/client";
 import { generateNotorietyActions, pickHub, referringDomainsOfSites } from "@/lib/objective-notoriety";
 import { generateDemandActions } from "@/lib/objective-demand";
 import { generateConversationActions } from "@/lib/objective-conversations";
+import { channelRules } from "@/lib/objective-channels";
+import { loadCrawlHealth, siteSituations } from "@/lib/objective-sites";
 import { findObjectiveTemplate, type ObjectiveTemplateNode } from "@/lib/objective-templates";
 
 export const WINDOW_DAYS = 28;
@@ -346,7 +348,15 @@ function canonicalUrl(u: string): string {
   }
 }
 
-type PageMeta = { title: string | null; description: string | null; h1s: string[]; hasSchema: boolean };
+export type PageMeta = {
+  title: string | null;
+  description: string | null;
+  h1s: string[];
+  hasSchema: boolean;
+  schemaTypes: string[];
+  hasSocialMeta: boolean;
+  imagesMissingAlt: number;
+};
 
 /** Title / meta / H1 of every page in the latest completed crawl per site. */
 async function loadLatestPageMeta(
@@ -364,11 +374,28 @@ async function loadLatestPageMeta(
     crawledSites.add(siteId);
     const pages = await db.auditPage.findMany({
       where: { crawlId: crawl.id, statusCode: 200 },
-      select: { url: true, title: true, description: true, h1s: true, hasSchema: true },
+      select: {
+        url: true,
+        title: true,
+        description: true,
+        h1s: true,
+        hasSchema: true,
+        schemaTypes: true,
+        hasSocialMeta: true,
+        imagesMissingAlt: true,
+      },
     });
     for (const p of pages) {
       const h1s = Array.isArray(p.h1s) ? (p.h1s as unknown[]).map(String) : [];
-      meta.set(canonicalUrl(p.url), { title: p.title, description: p.description, h1s, hasSchema: p.hasSchema });
+      meta.set(canonicalUrl(p.url), {
+        title: p.title,
+        description: p.description,
+        h1s,
+        hasSchema: p.hasSchema,
+        schemaTypes: p.schemaTypes ?? [],
+        hasSocialMeta: p.hasSocialMeta,
+        imagesMissingAlt: p.imagesMissingAlt,
+      });
     }
   }
   return { meta, crawledSites };
@@ -399,6 +426,30 @@ export type ObjectiveForRules = Pick<
   | "rivalSites"
 >;
 
+/**
+ * The (site, query) aggregates an objective reasons about, for the current
+ * and the previous window. With no terms at all the objective is
+ * "everything on these sites": every query is kept. Otherwise only the
+ * queries that name a term are in scope.
+ */
+export async function loadInScope(
+  objective: Pick<Objective, "focusTerms" | "rivalTerms">,
+  sites: ScopedSite[]
+): Promise<{ inScope: QueryAgg[]; previous: QueryAgg[]; hasTerms: boolean }> {
+  const siteIds = sites.map((s) => s.id);
+  const current = windowBounds(0);
+  const previousWindow = windowBounds(1);
+  const rows = await loadRows(siteIds, previousWindow.start);
+  const all = aggregate(rows.filter((r) => r.date >= current.start), objective.focusTerms, objective.rivalTerms);
+  const previousAll = aggregate(rows.filter((r) => r.date < current.start), objective.focusTerms, objective.rivalTerms);
+  const hasTerms = objective.focusTerms.length > 0 || objective.rivalTerms.length > 0;
+  return {
+    inScope: hasTerms ? all.filter((a) => a.bucket !== "other") : all,
+    previous: hasTerms ? previousAll.filter((a) => a.bucket !== "other") : previousAll,
+    hasTerms,
+  };
+}
+
 export async function generateActions(
   objective: ObjectiveForRules,
   scope?: ScopedSite[]
@@ -408,24 +459,7 @@ export async function generateActions(
   const domainOf = new Map(sites.map((s) => [s.id, s.domain]));
   const domain = (id: string) => domainOf.get(id) ?? id;
 
-  const current = windowBounds(0);
-  const previousWindow = windowBounds(1);
-  const rows = await loadRows(siteIds, previousWindow.start);
-  const all = aggregate(
-    rows.filter((r) => r.date >= current.start),
-    objective.focusTerms,
-    objective.rivalTerms
-  );
-  const previousAll = aggregate(
-    rows.filter((r) => r.date < current.start),
-    objective.focusTerms,
-    objective.rivalTerms
-  );
-
-  // With no terms at all the objective is "everything on these sites": keep
-  // every query. Otherwise only the queries that name a term are in scope.
-  const hasTerms = objective.focusTerms.length > 0 || objective.rivalTerms.length > 0;
-  const inScope = hasTerms ? all.filter((a) => a.bucket !== "other") : all;
+  const { inScope, previous: previousInScope, hasTerms } = await loadInScope(objective, sites);
 
   const actions: GeneratedAction[] = [];
   const push = (a: GeneratedAction) => actions.push({ ...a, priority: clampPriority(a.priority) });
@@ -636,12 +670,16 @@ export async function generateActions(
     rivalSites: objective.rivalSites ?? [],
     sites,
     queries: inScope,
-    previous: hasTerms ? previousAll.filter((a) => a.bucket !== "other") : previousAll,
+    previous: previousInScope,
     refs,
     hub,
   });
   for (const a of demand.actions) push(a);
   notes.push(...demand.notes);
+
+  // Channels: images, social cards, press and Discover, links from the pivot.
+  const situations = siteSituations(sites, inScope, await loadCrawlHealth(sites), hub);
+  for (const a of channelRules({ situations, queries: inScope, hub, focusTerms: objective.focusTerms, meta, canonicalUrl })) push(a);
 
   if (objective.focusTerms.length > 0 || objective.rivalTerms.length > 0) {
     const conversations = await generateConversationActions({
