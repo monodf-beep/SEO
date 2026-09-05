@@ -209,14 +209,18 @@ export async function suggestNotoriety(input: {
   focusTerms: string[];
   rivalTerms: string[];
 }): Promise<NotorietySuggestions> {
-  const sites = await resolveScope({ userId: input.userId, siteIds: input.siteIds });
-  return suggestNotorietyForSites(sites, input.focusTerms, input.rivalTerms);
+  const allSites = await resolveScope({ userId: input.userId, siteIds: input.siteIds });
+  // Creator profiles connected as sites are social profiles by definition.
+  const profileUrls = allSites.filter((s) => s.kind === "PROFILE").map((s) => `https://${s.domain}`);
+  const sites = allSites.filter((s) => s.kind !== "PROFILE");
+  return suggestNotorietyForSites(sites, input.focusTerms, input.rivalTerms, profileUrls);
 }
 
 export async function suggestNotorietyForSites(
   sites: ScopedSite[],
   focusTerms: string[],
-  rivalTerms: string[]
+  rivalTerms: string[],
+  knownProfiles: string[] = []
 ): Promise<NotorietySuggestions> {
   const input = { focusTerms, rivalTerms };
   const notes: string[] = [];
@@ -240,7 +244,16 @@ export async function suggestNotorietyForSites(
   const hubIndex = Math.max(0, sites.findIndex((s) => words.some((w) => normalizeTerm(s.domain).includes(w))));
   const entityName =
     pages[hubIndex]?.entityName ?? pages.find((p) => p?.entityName)?.entityName ?? null;
-  const socialProfiles = [...new Set(pages.flatMap((p) => p?.socials ?? []))].slice(0, 12);
+  // One entry per profile, whatever the www or trailing slash it was written with.
+  const seenProfiles = new Set<string>();
+  const socialProfiles: string[] = [];
+  for (const url of [...knownProfiles, ...pages.flatMap((p) => p?.socials ?? [])]) {
+    const key = url.toLowerCase().replace(/^https?:\/\/(www\.)?/, "").replace(/\/+$/, "");
+    if (seenProfiles.has(key)) continue;
+    seenProfiles.add(key);
+    socialProfiles.push(url);
+    if (socialProfiles.length >= 12) break;
+  }
 
   // Wikipedia, serialised: one search per term, then the rival articles' links.
   const wikiArticles: string[] = [];

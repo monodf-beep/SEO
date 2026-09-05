@@ -15,7 +15,7 @@ type AppShellProps = {
   name?: string | null;
   image?: string | null;
   children: React.ReactNode;
-  sites: { id: string; domain: string }[];
+  sites: { id: string; domain: string; kind?: "WEBSITE" | "PROFILE" }[];
 };
 
 export function AppShell({

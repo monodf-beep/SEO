@@ -3,6 +3,7 @@ import { cn } from "@/lib/utils";
 import { SITE_ROLE_HINTS, SITE_ROLE_LABELS, type SiteSituation } from "@/lib/objective-sites";
 
 const ROLE_CLASS: Record<SiteSituation["role"], string> = {
+  profil: "bg-pink-500/15 text-pink-700 dark:text-pink-400",
   pivot: "bg-primary/15 text-primary",
   secondaire: "bg-signal-muted text-signal",
   naissant: "bg-amber-500/15 text-amber-700 dark:text-amber-400",
@@ -70,7 +71,9 @@ export function SiteSituations({ rows, hasTerms }: { rows: SiteSituation[]; hasT
                   <SearchTypeCell totals={r.searchTypes} />
                 </td>
                 <td className="py-2.5 text-xs text-muted-foreground">
-                  {!r.crawl.crawled ? (
+                  {r.site.kind === "PROFILE" ? (
+                    <span>Profil : rien à crawler</span>
+                  ) : !r.crawl.crawled ? (
                     <Link href={`/sites/${r.site.id}/crawl`} className="hover:underline">
                       Pas de crawl
                     </Link>

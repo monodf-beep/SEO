@@ -107,6 +107,7 @@ model Site {
   userId      String
   domain      String   // e.g. "brandson.digital"
   gscProperty String?  // e.g. "sc-domain:brandson.digital"
+  kind        SiteKind @default(WEBSITE) // a website to crawl, or a creator profile read from Search Console only
   googleAccountId String? // which linked Google account reads Search Console; null = the login account
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -318,6 +319,14 @@ enum IssueType {
   SLOW_PAGE             // Load time > 3s
   MIXED_CONTENT         // HTTP resources on HTTPS page
   LARGE_PAGE            // Page size > 3MB
+}
+
+// A Search Console property is a website (domain or URL prefix) or, since
+// 2026, a creator profile (Instagram, YouTube): no pages to crawl, but the
+// queries its posts rank on.
+enum SiteKind {
+  WEBSITE
+  PROFILE
 }
 
 enum IssueSeverity {

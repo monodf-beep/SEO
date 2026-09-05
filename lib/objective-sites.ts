@@ -9,9 +9,10 @@ import { db } from "@/lib/db";
 import type { QueryAgg, ScopedSite } from "@/lib/objectives";
 import type { SearchTypeTotals } from "@/lib/google/gsc-client";
 
-export type SiteRole = "pivot" | "secondaire" | "naissant" | "silencieux";
+export type SiteRole = "pivot" | "secondaire" | "naissant" | "silencieux" | "profil";
 
 export const SITE_ROLE_LABELS: Record<SiteRole, string> = {
+  profil: "Profil",
   pivot: "Pivot",
   secondaire: "Secondaire",
   naissant: "Naissant",
@@ -19,6 +20,7 @@ export const SITE_ROLE_LABELS: Record<SiteRole, string> = {
 };
 
 export const SITE_ROLE_HINTS: Record<SiteRole, string> = {
+  profil: "Profil de créateur (Instagram, YouTube) : ses posts indexés par Google, lus dans la Search Console ; rien à crawler.",
   pivot: "Capte l'essentiel de la demande : la destination des liens et des partages.",
   secondaire: "Visible sur une partie des requêtes ; à lier au pivot et à nourrir de contenus propres.",
   naissant: "Vu mais pas cliqué : notoriété et liens depuis le pivot avant tout.",
@@ -73,6 +75,7 @@ export async function loadCrawlHealth(sites: ScopedSite[]): Promise<Map<string, 
   for (const site of sites) {
     const h = emptyHealth();
     out.set(site.id, h);
+    if (site.kind === "PROFILE") continue;
     const crawl = await db.crawl.findFirst({
       where: { siteId: site.id, status: "COMPLETED" },
       orderBy: { finishedAt: "desc" },
@@ -140,10 +143,11 @@ export function siteSituations(
   });
   const top = Math.max(1, ...rows.map((r) => r.impressions));
   for (const r of rows) {
-    if (hub && r.site.id === hub.id && r.queries > 0) r.role = "pivot";
+    if (r.site.kind === "PROFILE") r.role = "profil";
+    else if (hub && r.site.id === hub.id && r.queries > 0) r.role = "pivot";
     else if (r.queries === 0) r.role = "silencieux";
     else if (r.clicks === 0 || r.impressions < top * 0.05) r.role = "naissant";
   }
-  const order: Record<SiteRole, number> = { pivot: 0, secondaire: 1, naissant: 2, silencieux: 3 };
+  const order: Record<SiteRole, number> = { pivot: 0, secondaire: 1, naissant: 2, silencieux: 3, profil: 4 };
   return rows.sort((a, b) => order[a.role] - order[b.role] || b.impressions - a.impressions);
 }

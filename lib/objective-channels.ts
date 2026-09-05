@@ -37,6 +37,9 @@ export function channelRules(input: ChannelInput): GeneratedAction[] {
 
   for (const s of situations) {
     const site = s.site;
+    // A creator profile has no pages, images or markup of its own; its
+    // queries feed the social rules instead.
+    if (site.kind === "PROFILE") continue;
     const label = host(site.domain);
     const crawlUrl = `/sites/${site.id}/crawl`;
 
@@ -157,7 +160,7 @@ export function channelRules(input: ChannelInput): GeneratedAction[] {
     if (top.length > 0) {
       for (const s of situations) {
         if (s.role !== "naissant" && s.role !== "secondaire") continue;
-        if (s.site.id === hub.id) continue;
+        if (s.site.id === hub.id || s.site.kind === "PROFILE") continue;
         if (s.role === "secondaire" && s.clicks > 0) continue;
         const weak = host(s.site.domain);
         actions.push({

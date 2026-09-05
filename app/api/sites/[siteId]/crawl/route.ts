@@ -15,11 +15,17 @@ export async function POST(
     const { siteId } = await params;
     const site = await db.site.findUnique({
       where: { id: siteId },
-      select: { userId: true, domain: true },
+      select: { userId: true, domain: true, kind: true },
     });
 
     if (!site || site.userId !== session.user.id) {
       return Response.json({ error: "Introuvable" }, { status: 404 });
+    }
+    if (site.kind === "PROFILE") {
+      return Response.json(
+        { error: "Un profil de créateur n'a pas de pages à crawler : seules ses données Search Console sont lues." },
+        { status: 400 }
+      );
     }
 
     // Prevent concurrent crawls

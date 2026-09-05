@@ -114,7 +114,9 @@ async function getJson(url: string, params: Record<string, string>, notes: strin
 
 /** The site that collects the most impressions on the defended vocabulary:
  *  the natural target of every external link. */
-export function pickHub(sites: ScopedSite[], queries: QueryAgg[], focusTerms: string[]): ScopedSite | null {
+export function pickHub(allSites: ScopedSite[], queries: QueryAgg[], focusTerms: string[]): ScopedSite | null {
+  // A creator profile is never the destination of the links: only websites.
+  const sites = allSites.filter((s) => s.kind !== "PROFILE");
   if (sites.length === 0) return null;
   // A domain that literally carries the defended vocabulary is the entity's
   // home, whatever the traffic says.
@@ -480,6 +482,7 @@ export async function referringDomainsOfSites(
   const refs = new Set<string>();
   let configured = false;
   for (const site of sites) {
+    if (site.kind === "PROFILE") continue;
     try {
       const rows = await backlinksProfile(userId, site.domain, 1000, 0);
       if (rows === null) continue;

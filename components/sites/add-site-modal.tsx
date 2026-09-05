@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { propertyDomain, propertyKind, propertyLabel } from "@/lib/google/gsc-client";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -120,28 +121,15 @@ export function AddSiteModal({
     setError("");
 
     try {
-      // Two GSC property shapes, and they must be told apart by prefix rather
-      // than by "contains a colon": splitting a URL-prefix property on ":"
-      // leaves "//example.com/", which no longer starts with "http", so the
-      // branch below never runs and the malformed value reaches the database.
-      let domain = selectedProperty;
-      if (domain.startsWith("sc-domain:")) {
-        // Domain property: sc-domain:example.com
-        domain = domain.slice("sc-domain:".length);
-      } else {
-        // URL-prefix property: https://example.com/
-        try {
-          domain = new URL(domain).hostname;
-        } catch {
-          // keep as-is
-        }
-      }
+      const domain = propertyDomain(selectedProperty);
+      const kind = propertyKind(selectedProperty) ?? "WEBSITE";
 
       const response = await fetch("/api/sites", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           domain,
+          kind,
           gscProperty: selectedProperty,
           googleAccountId: accountId || null,
         }),
@@ -231,7 +219,7 @@ export function AddSiteModal({
               <SelectContent>
                 {properties.map((prop) => (
                   <SelectItem key={prop.siteUrl} value={prop.siteUrl}>
-                    {prop.siteUrl}
+                    {propertyLabel(prop.siteUrl)}
                   </SelectItem>
                 ))}
               </SelectContent>

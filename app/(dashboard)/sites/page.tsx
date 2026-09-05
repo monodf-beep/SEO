@@ -15,6 +15,7 @@ export default async function SitesPage() {
     select: {
       id: true,
       domain: true,
+      kind: true,
       gscProperty: true,
       createdAt: true,
       _count: {
@@ -41,7 +42,7 @@ export default async function SitesPage() {
         <EmptyState
           icon="⊕"
           title="Connectez votre première propriété"
-          description="Choisissez une propriété de domaine ou à préfixe d'URL dans la Search Console. CrawlSEO stocke vos données en local."
+          description="Choisissez une propriété de la Search Console : un site (domaine ou préfixe d'URL) ou un profil de créateur (Instagram, YouTube). CrawlSEO stocke vos données en local."
         />
       ) : (
         <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -54,6 +55,7 @@ export default async function SitesPage() {
                       {site.domain}
                     </h2>
                     <p className="mt-1 truncate font-data text-xs text-muted-foreground">
+                      {site.kind === "PROFILE" ? "Profil de créateur · " : ""}
                       {site.gscProperty}
                     </p>
                   </div>

@@ -32,14 +32,14 @@ import type { TermBucket } from "@/lib/objective-terms";
 // Scope
 // ---------------------------------------------------------------------------
 
-export type ScopedSite = { id: string; domain: string };
+export type ScopedSite = { id: string; domain: string; kind?: "WEBSITE" | "PROFILE" };
 
 export async function resolveScope(
   objective: Pick<Objective, "userId" | "siteIds">
 ): Promise<ScopedSite[]> {
   const sites = await db.site.findMany({
     where: { userId: objective.userId },
-    select: { id: true, domain: true },
+    select: { id: true, domain: true, kind: true },
     orderBy: { domain: "asc" },
   });
   if (objective.siteIds.length === 0) return sites;
@@ -472,10 +472,28 @@ export async function generateActions(
     byQuery.set(a.query, list);
   }
 
-  // Rule 1 — striking distance: page 1 low / page 2, worth pushing.
+  const profileIds = new Set(sites.filter((s) => s.kind === "PROFILE").map((s) => s.id));
+
+  // Rule 1 — striking distance: page 1 low / page 2, worth pushing. On a
+  // creator profile the "page" is a post: the answer is a new post, not an
+  // edit.
   for (const a of inScope) {
     if (a.position < 4 || a.position > 20 || a.impressions < 10) continue;
     const page = a.page ? ` · page : ${a.page}` : "";
+    if (profileIds.has(a.siteId)) {
+      push({
+        fingerprint: `striking:${a.siteId}:${a.query}`,
+        type: "SOCIAL",
+        title: `Publier un nouveau post sur ${quote(a.query)} : le précédent se positionne`,
+        detail: `Un post de ${domain(a.siteId)} sort en position ${fmtPos(a.position)} sur Google pour cette requête (${fmtInt(a.impressions)} impressions sur ${WINDOW_DAYS} j)${a.page ? ` : ${a.page}` : ""}. Google indexe vos posts : un nouveau post qui nomme la requête dans sa légende et son texte alternatif, avec le lien du site en bio, en amène un deuxième.`,
+        query: a.query,
+        url: a.page ?? undefined,
+        siteId: a.siteId,
+        priority: basePriority(a.impressions) + 10,
+        source: "rule:striking_distance",
+      });
+      continue;
+    }
     push({
       fingerprint: `striking:${a.siteId}:${a.query}`,
       type: "CONTENT_UPDATE",
@@ -493,6 +511,7 @@ export async function generateActions(
   // problem. When rule 1 already asks for work on the same page for the same
   // query, fold the CTR evidence into that task instead of opening a second.
   for (const a of inScope) {
+    if (profileIds.has(a.siteId)) continue; // a post has no title tag to rewrite
     if (a.position > 10 || a.impressions < 30) continue;
     const exp = expectedCtr(a.position);
     if (a.ctr >= exp * 0.5) continue;
@@ -562,7 +581,7 @@ export async function generateActions(
   // defended one in its title, meta or H1. Needs a crawl to read the page.
   const sitesWithoutCrawl: string[] = [];
   const { meta, crawledSites } = await loadLatestPageMeta(siteIds);
-  for (const id of siteIds) if (!crawledSites.has(id)) sitesWithoutCrawl.push(domain(id));
+  for (const s of sites) if (s.kind !== "PROFILE" && !crawledSites.has(s.id)) sitesWithoutCrawl.push(s.domain);
   if (objective.focusTerms.length > 0 && objective.rivalTerms.length > 0) {
 
     type PerUrl = { siteId: string; url: string; queries: QueryAgg[]; impressions: number };

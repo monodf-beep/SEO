@@ -16,7 +16,7 @@ export default async function DashboardLayout({
 
   const sites = await db.site.findMany({
     where: { userId: session.user?.id },
-    select: { id: true, domain: true },
+    select: { id: true, domain: true, kind: true },
     orderBy: { domain: "asc" },
   });
 

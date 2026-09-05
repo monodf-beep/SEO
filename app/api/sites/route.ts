@@ -51,11 +51,13 @@ export async function POST(req: Request) {
       return Response.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const { domain, gscProperty, googleAccountId } = (await req.json()) as {
+    const { domain, gscProperty, googleAccountId, kind: rawKind } = (await req.json()) as {
       domain: string;
       gscProperty: string;
       googleAccountId?: string | null;
+      kind?: string;
     };
+    const kind: "WEBSITE" | "PROFILE" = rawKind === "PROFILE" ? "PROFILE" : "WEBSITE";
 
     if (googleAccountId) {
       const account = await db.googleAccount.findUnique({
@@ -74,14 +76,22 @@ export async function POST(req: Request) {
       );
     }
 
-    // Reject domains that resolve to private/internal IPs (SSRF protection)
-    try {
-      await assertPublicDomain(domain);
-    } catch {
-      return Response.json(
-        { error: "Le domaine doit résoudre vers une adresse IP publique" },
-        { status: 400 }
-      );
+    if (kind === "PROFILE") {
+      // A creator profile is never fetched by CrawlSEO itself, so the SSRF
+      // guard does not apply; the property shape is what matters.
+      if (!gscProperty.startsWith("sc-creator-profile:") || !/^[a-z0-9.-]+\/[^\s/]+/i.test(domain)) {
+        return Response.json({ error: "Profil de créateur invalide" }, { status: 400 });
+      }
+    } else {
+      // Reject domains that resolve to private/internal IPs (SSRF protection)
+      try {
+        await assertPublicDomain(domain);
+      } catch {
+        return Response.json(
+          { error: "Le domaine doit résoudre vers une adresse IP publique" },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if site already exists
@@ -106,6 +116,7 @@ export async function POST(req: Request) {
       data: {
         userId: session.user.id,
         domain,
+        kind,
         gscProperty,
         googleAccountId: googleAccountId || null,
       },

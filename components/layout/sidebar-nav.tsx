@@ -36,13 +36,15 @@ export function SidebarNav({
   sites,
   collapsed = false,
 }: {
-  sites: { id: string; domain: string }[];
+  sites: { id: string; domain: string; kind?: "WEBSITE" | "PROFILE" }[];
   collapsed?: boolean;
 }) {
   const pathname = usePathname();
   const match = pathname.match(/\/sites\/([^/]+)/);
   const activeSiteId =
     match?.[1] && sites.some((s) => s.id === match[1]) ? match[1] : undefined;
+  // A creator profile has no pages of its own: nothing to crawl or measure.
+  const isProfile = sites.find((s) => s.id === activeSiteId)?.kind === "PROFILE";
 
   const overviewNav: NavGroup = {
     label: "Vue d'ensemble",
@@ -62,8 +64,12 @@ export function SidebarNav({
           { href: `/sites/${activeSiteId}/keywords`, label: "Mots-clés", icon: Search },
           { href: `/sites/${activeSiteId}/saved-keywords`, label: "Mots-clés suivis", icon: Bookmark },
           { href: `/sites/${activeSiteId}/pages`, label: "Pages", icon: FileText },
-          { href: `/sites/${activeSiteId}/crawl`, label: "Crawl / Audit", icon: Bug },
-          { href: `/sites/${activeSiteId}/vitals`, label: "Vitals", icon: Gauge },
+          ...(isProfile
+            ? []
+            : [
+                { href: `/sites/${activeSiteId}/crawl`, label: "Crawl / Audit", icon: Bug },
+                { href: `/sites/${activeSiteId}/vitals`, label: "Vitals", icon: Gauge },
+              ]),
           { href: `/sites/${activeSiteId}/opportunities`, label: "Opportunités", icon: Lightbulb },
           { href: `/sites/${activeSiteId}/alerts`, label: "Alertes", icon: Bell },
           { href: `/sites/${activeSiteId}/settings`, label: "Paramètres du site", icon: Settings },

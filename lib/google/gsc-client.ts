@@ -58,12 +58,42 @@ export async function listGSCProperties(
 
   const data = (await response.json()) as { siteEntry?: GSCProperty[] };
 
-  // Search Console now also lists creator profiles (sc-creator-profile:
-  // instagram.com/…, youtube channels). They carry no crawlable domain and
-  // their analytics have a different shape: only websites belong here.
-  return (data.siteEntry || []).filter(
-    (p) => p.siteUrl.startsWith("sc-domain:") || /^https?:\/\//i.test(p.siteUrl)
-  );
+  // Websites (domain or URL prefix) and creator profiles (Instagram, YouTube:
+  // sc-creator-profile:instagram.com/handle). Anything else is unknown.
+  return (data.siteEntry || []).filter((p) => propertyKind(p.siteUrl) !== null);
+}
+
+/** What a Search Console property is, or null when the shape is unknown. */
+export function propertyKind(siteUrl: string): "WEBSITE" | "PROFILE" | null {
+  if (siteUrl.startsWith("sc-domain:") || /^https?:\/\//i.test(siteUrl)) return "WEBSITE";
+  if (siteUrl.startsWith("sc-creator-profile:")) return "PROFILE";
+  return null;
+}
+
+/**
+ * The domain CrawlSEO stores for a property: the bare host of a website,
+ * "instagram.com/handle" for a creator profile.
+ */
+export function propertyDomain(siteUrl: string): string {
+  if (siteUrl.startsWith("sc-domain:")) return siteUrl.slice("sc-domain:".length);
+  if (siteUrl.startsWith("sc-creator-profile:")) {
+    return siteUrl.slice("sc-creator-profile:".length).replace(/^https?:\/\//, "").replace(/^www\./, "").replace(/\/+$/, "");
+  }
+  try {
+    return new URL(siteUrl).hostname;
+  } catch {
+    return siteUrl;
+  }
+}
+
+/** "@handle · Instagram" for a creator profile, the property itself otherwise. */
+export function propertyLabel(siteUrl: string): string {
+  if (!siteUrl.startsWith("sc-creator-profile:")) return siteUrl;
+  const rest = propertyDomain(siteUrl);
+  const [host, ...path] = rest.split("/");
+  const handle = path.join("/");
+  const network = /instagram/.test(host) ? "Instagram" : /youtube/.test(host) ? "YouTube" : /tiktok/.test(host) ? "TikTok" : host;
+  return `@${handle} · ${network} (profil)`;
 }
 
 /**
