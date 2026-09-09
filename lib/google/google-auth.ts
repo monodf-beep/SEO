@@ -110,6 +110,41 @@ async function resolve(source: TokenSource): Promise<Resolved> {
   return resolve(site.userId);
 }
 
+/**
+ * Which Google identity a call will be made as, in words.
+ *
+ * A Search Console 403 says nothing about the account that was refused, and
+ * a workspace with several linked identities cannot act on "Forbidden": the
+ * property is usually fine and the account is simply the wrong one. This
+ * turns the source back into the email the user recognises.
+ */
+export async function describeTokenSource(source: TokenSource): Promise<string> {
+  try {
+    if (typeof source === "string") {
+      const user = await db.user.findUnique({
+        where: { id: source },
+        select: { email: true },
+      });
+      return user?.email ? `le compte de connexion (${user.email})` : "le compte de connexion";
+    }
+    if ("accountId" in source) {
+      const account = await db.googleAccount.findUnique({
+        where: { id: source.accountId },
+        select: { email: true },
+      });
+      return account?.email ? `le compte Google ${account.email}` : "ce compte Google";
+    }
+    const site = await db.site.findUnique({
+      where: { id: source.siteId },
+      select: { userId: true, googleAccount: { select: { email: true } } },
+    });
+    if (site?.googleAccount?.email) return `le compte Google ${site.googleAccount.email}`;
+    return site ? describeTokenSource(site.userId) : "ce compte Google";
+  } catch {
+    return "ce compte Google";
+  }
+}
+
 async function persist(target: Resolved, tokens: GoogleTokens) {
   if (target.kind === "user") {
     await db.user.update({

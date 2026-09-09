@@ -1,4 +1,4 @@
-import { getAccessToken, type TokenSource } from "./google-auth";
+import { describeTokenSource, getAccessToken, type TokenSource } from "./google-auth";
 
 const GSC_API_BASE = "https://www.googleapis.com/webmasters/v3";
 
@@ -36,6 +36,45 @@ export interface KeywordData {
 /**
  * Lists all Google Search Console properties for a user
  */
+/**
+ * Turns a failed Search Console response into an error a user can act on.
+ *
+ * Google answers 403 both when the property is not shared with the account
+ * and when the API is disabled, and "Forbidden" alone sends people looking
+ * at the property when the account is what is wrong. The message therefore
+ * names the property, the identity the call was made as, and the two ways
+ * out; Google's own reason is appended when it sends one.
+ */
+async function gscFailure(
+  response: Response,
+  siteUrl: string,
+  source: TokenSource,
+  what: string
+): Promise<Error> {
+  const body = await response.text().catch(() => "");
+  let reason = "";
+  try {
+    const parsed = JSON.parse(body) as { error?: { message?: string } };
+    reason = parsed.error?.message ?? "";
+  } catch {
+    reason = body.slice(0, 200);
+  }
+
+  if (response.status === 403) {
+    const who = await describeTokenSource(source);
+    return new Error(
+      `Search Console refuse ${siteUrl} pour ${who}. ` +
+        `Soit la propriété n'est pas partagée avec ce compte, soit le site est rattaché au mauvais compte Google : ` +
+        `ouvrez les réglages du site pour le rattacher au bon compte, ou ajoutez ce compte comme utilisateur de la propriété dans Search Console.` +
+        (reason ? ` (Google : ${reason})` : "")
+    );
+  }
+
+  return new Error(
+    `${what} : ${response.status} ${response.statusText}${reason ? ` — ${reason}` : ""}`
+  );
+}
+
 export async function listGSCProperties(
   source: TokenSource
 ): Promise<GSCProperty[]> {
@@ -146,9 +185,7 @@ export async function fetchSearchAnalytics(
     );
 
     if (!response.ok) {
-      throw new Error(
-        `Failed to fetch search analytics: ${response.statusText}`
-      );
+      throw await gscFailure(response, siteUrl, source, "Échec de la lecture des requêtes");
     }
 
     const data = (await response.json()) as {
@@ -216,9 +253,7 @@ export async function fetchPageAnalytics(
   );
 
   if (!response.ok) {
-    throw new Error(
-      `Failed to fetch page analytics: ${response.statusText}`
-    );
+    throw await gscFailure(response, siteUrl, source, "Échec de la lecture des pages");
   }
 
   const data = (await response.json()) as {
