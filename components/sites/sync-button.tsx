@@ -93,7 +93,7 @@ export function SyncButton({
       {message && (
         <p
           className={cn(
-            "text-atom-caption",
+            "text-atom-caption break-words",
             error ? "text-danger" : "text-signal",
             fullWidth && "text-center"
           )}

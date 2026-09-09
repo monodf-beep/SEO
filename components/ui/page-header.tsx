@@ -36,7 +36,14 @@ export function PageHeader({
         )}
       </div>
       {actions && (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+        // Not shrink-0: an action slot that refuses to shrink pushes the
+        // title column to zero width, and a long message in it (a Search
+        // Console refusal, say) leaves the description rendering one word
+        // per line. Capped at half the row instead, with long strings
+        // wrapping inside it.
+        <div className="flex min-w-0 flex-wrap items-center gap-2 break-words sm:max-w-[50%] sm:justify-end">
+          {actions}
+        </div>
       )}
     </div>
   );
